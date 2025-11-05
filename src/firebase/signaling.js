@@ -29,18 +29,27 @@ export const createSession = async (sessionCode, offer) => {
  * Escuta por mudanças na sessão (para aluno receber oferta e professor receber resposta)
  * @param {string} sessionCode - Código da sessão
  * @param {function} callback - Callback chamado quando há mudanças
+ * @param {function} errorCallback - Callback chamado em caso de erro no listener
  * @returns {function} Função para cancelar a escuta
  */
-export const listenToSession = (sessionCode, callback) => {
+export const listenToSession = (sessionCode, callback, errorCallback) => { // Adicionado errorCallback
   checkFirebase();
   const sessionRef = ref(database, `sessions/${sessionCode}`);
   
-  const unsubscribe = onValue(sessionRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      callback(data);
+  const unsubscribe = onValue(sessionRef, 
+    (snapshot) => { // Callback de sucesso
+      const data = snapshot.val();
+      if (data) {
+        callback(data);
+      }
+    }, 
+    (error) => { // Callback de erro
+      console.error('Erro ao escutar sessão no Firebase:', error);
+      if (errorCallback) {
+        errorCallback(error);
+      }
     }
-  });
+  );
 
   return () => {
     off(sessionRef);

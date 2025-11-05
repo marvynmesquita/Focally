@@ -47,11 +47,17 @@ export const useWebRTC = (mode) => {
       // Handler para mudanças no estado da conexão ICE
       pc.oniceconnectionstatechange = () => {
         console.log('ICE Connection State:', pc.iceConnectionState);
+        
         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
           setStatus(mode === 'professor' ? 'Transmitindo' : 'Conectado');
           setIsConnected(true);
+          setError(null); // Limpa erros anteriores ao conectar
+        
         } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-          setStatus('Desconectado');
+          // ADICIONANDO LOG DE ERRO E ATUALIZAÇÃO DE ESTADO
+          console.error('Erro de conexão WebRTC: Estado mudou para', pc.iceConnectionState);
+          setStatus('Conexão perdida');
+          setError('A conexão falhou ou foi desconectada.');
           setIsConnected(false);
         }
       };
@@ -163,6 +169,11 @@ export const useWebRTC = (mode) => {
             setError('Erro ao processar resposta: ' + err.message);
           }
         }
+      }, 
+      (firebaseError) => { // ADICIONADO: Callback de erro do listener
+        console.error('Erro no listener do Firebase (Professor):', firebaseError);
+        setError('Erro ao escutar a sessão: ' + firebaseError.message);
+        setStatus('Erro');
       });
 
       unsubscribeRef.current = unsubscribe;
@@ -224,6 +235,11 @@ export const useWebRTC = (mode) => {
             setStatus('Erro');
           }
         }
+      },
+      (firebaseError) => { // ADICIONADO: Callback de erro do listener
+        console.error('Erro no listener do Firebase (Aluno):', firebaseError);
+        setError('Erro ao escutar a sessão: ' + firebaseError.message);
+        setStatus('Erro');
       });
 
       unsubscribeRef.current = unsubscribe;
