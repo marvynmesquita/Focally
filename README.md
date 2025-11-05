@@ -30,7 +30,17 @@ npm install
 npm run dev
 ```
 
-4. Abra o navegador em `http://localhost:5173`
+4. Abra o navegador em `http://localhost:4000` (ou na porta definida em `PORT`)
+
+**Nota:** A porta padrão é `4000`. Para alterar, defina a variável de ambiente `PORT`:
+```bash
+PORT=3000 npm run dev
+```
+
+Ou crie um arquivo `.env` na raiz do projeto:
+```
+PORT=3000
+```
 
 ## 🎯 Como Usar
 
