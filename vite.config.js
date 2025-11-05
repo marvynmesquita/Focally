@@ -14,6 +14,7 @@ export default defineConfig({
     strictPort: true, // Falha se a porta estiver em uso
   },
   preview: {
+    allowedHosts: ['focally.onrender.com', 'localhost', '127.0.0.1'],
     port: port,
     host: '0.0.0.0', // Escuta em todas as interfaces (necessário para Render)
     strictPort: true,
