@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: focally
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: NODE_ENV
+        value: production
+
