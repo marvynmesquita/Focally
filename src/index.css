@@ -10,8 +10,32 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* Define a altura mínima como 100% da tela */
   min-height: 100vh;
+  
+  /* O gradiente com suas 10 cores */
+  background: linear-gradient(
+    45deg, /* O ângulo do gradiente (mude para 90deg, 180deg, etc.) */
+    #f3f0f1,
+    #e3eaf4,
+    #98b9e1,
+    #7ba8db,
+    #4e85d1,
+    #8b8ac5,
+    #d39d88,
+    #f1ae72,
+    #fbdfc1,
+    #fae3ce
+  );
+
+  /* Faz o fundo ficar "fixo" ao rolar a página. Fica mais suave. */
+  background-attachment: fixed;
+  
+  /* Garante que o gradiente não se repita */
+  background-repeat: no-repeat;
+  
+  /* Garante que o gradiente cubra toda a área */
+  background-size: cover;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -24,10 +48,22 @@ body {
 }
 
 .app-container {
-  background: white;
-  border-radius: 16px;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background-color: rgba(17, 25, 40, 0.75);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.125);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   padding: 40px;
+  display: flex;
+  flex-direction: column;
+  color: white;
+}
+
+.logo {
+  display: block;
+  margin: 0 auto 20px auto;
+  max-width: 300px;
 }
 
 h1 {
@@ -48,30 +84,6 @@ h1 {
   gap: 15px;
   margin-bottom: 30px;
   justify-content: center;
-}
-
-.mode-button {
-  padding: 15px 30px;
-  font-size: 16px;
-  font-weight: 600;
-  border: 2px solid #667eea;
-  background: white;
-  color: #667eea;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.mode-button:hover {
-  background: #667eea;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.mode-button.active {
-  background: #667eea;
-  color: white;
 }
 
 .view-container {
@@ -228,4 +240,87 @@ audio {
   border-radius: 4px;
   border: 1px solid #ccc;
   font-size: 16px;
+}
+
+.view-container h2 {
+  margin-bottom: 15px;
+}
+
+.connection-form label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+  color: white;
+}
+
+.connection-form div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+/* --- Estilos do Botão --- */
+.mode-button {
+  position: relative; /* Essencial para o ::before */
+  z-index: 1;
+
+  /* Estilos visuais */
+  padding: 18px 36px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  color: #fae3ce;
+  backdrop-filter: blur(15px) saturate(180%);
+  -webkit-backdrop-filter: blur(15px) saturate(180%);
+  background-color: rgba(17, 25, 40, 0.85);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.125);
+  cursor: pointer;
+}
+.mode-button:hover {
+  backdrop-filter: blur(15px) saturate(180%);
+  -webkit-backdrop-filter: blur(15px) saturate(180%);
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.125);
+  color: #333;
+}
+
+/* --- O Pseudo-elemento (O Brilho) --- */
+.mode-button::before {
+  content: '';
+  position: absolute;
+  /* Posicionado um pouco para fora para criar a borda/sombra */
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+
+  z-index: -1; /* Fica atrás do botão */
+  border-radius: 10px; /* Deve ser igual ao botão */
+
+  /* O gradiente com suas 10 cores */
+  background: linear-gradient(
+    45deg,
+    #f3f0f1, #e3eaf4, #98b9e1, #7ba8db, #4e85d1, 
+    #8b8ac5, #d39d88, #f1ae72, #fbdfc1, #fae3ce
+  );
+  
+  /* O truque mágico: transforma o fundo sólido em um brilho */
+  filter: blur(20px);
+  
+  /* Estado inicial: escondido */
+  opacity: 0;
+  transform: scale(0.95);
+  
+  /* Transição para aparecer suavemente */
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+/* --- Animação no Hover --- */
+.mode-button:hover::before {
+  opacity: 1;
+  transform: scale(1); /* Faz o brilho "crescer" para a posição final */
 }

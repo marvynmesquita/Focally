@@ -8,8 +8,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>🎧 Focally</h1>
-      <p className="subtitle">Transmissão de Áudio Assistiva - Tecnologia para TDAH</p>
+      <img src="/image/logo.png" alt="Focally Logo" className='logo' />
       
       {!mode ? (
         <div>

@@ -123,16 +123,11 @@ function SessionCodeInput({ onConnect, disabled }) {
   // Modo Padrão (Digitação)
   return (
     <div>
-      <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
-        <label style={{ 
-          display: 'block', 
-          marginBottom: '8px', 
-          fontWeight: '600', 
-          color: '#333' 
-        }}>
+      <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }} className='connection-form'>
+        <label>
           Digite o código de sessão (6 dígitos):
         </label>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+        <div>
           <input
             type="text"
             value={code}
