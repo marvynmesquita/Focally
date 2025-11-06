@@ -14,7 +14,16 @@ function AlunoView() {
     cleanup
   } = useWebRTC('aluno');
 
-  const audioRef = useRef(null);
+  // MODIFICADO: Renomeado de audioRef para professorAudioRef
+  const professorAudioRef = useRef(null);
+  
+  // NOVO: Ref para o player da onda sonora
+  const soundWaveAudioRef = useRef(null);
+
+  // NOVO: Estados para controle de volume e seleção de som
+  const [professorVolume, setProfessorVolume] = useState(1); // 1 = 100%
+  const [soundWaveVolume, setSoundWaveVolume] = useState(0.2); // 0.2 = 20%
+  const [selectedSound, setSelectedSound] = useState(''); // '' = Nenhuma
 
   // Limpar recursos quando o componente for desmontado
   useEffect(() => {
@@ -23,12 +32,44 @@ function AlunoView() {
     };
   }, [cleanup]);
 
-  // Atualizar o elemento de áudio quando o stream remoto for recebido
+  // MODIFICADO: Atualiza o player de áudio do professor
   useEffect(() => {
-    if (remoteStream && audioRef.current) {
-      audioRef.current.srcObject = remoteStream;
+    if (remoteStream && professorAudioRef.current) {
+      professorAudioRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
+
+  // NOVO: useEffect para controlar o volume do professor
+  useEffect(() => {
+    if (professorAudioRef.current) {
+      professorAudioRef.current.volume = professorVolume;
+    }
+  }, [professorVolume]);
+
+  // NOVO: useEffect para controlar o player da onda sonora (seleção e volume)
+  useEffect(() => {
+    if (soundWaveAudioRef.current) {
+      // Define o volume
+      soundWaveAudioRef.current.volume = soundWaveVolume;
+
+      // Se uma onda sonora for selecionada
+      if (selectedSound) {
+        const soundFile = `/audio/${selectedSound}.mp3`;
+        // Evita recarregar se o src já for o mesmo (ex: apenas mudando o volume)
+        if (soundWaveAudioRef.current.src.endsWith(soundFile)) {
+          soundWaveAudioRef.current.play().catch(e => console.warn("Autoplay da onda sonora bloqueado"));
+        } else {
+          soundWaveAudioRef.current.src = soundFile;
+          soundWaveAudioRef.current.play().catch(e => console.warn("Autoplay da onda sonora bloqueado"));
+        }
+      } else {
+        // Se "Nenhuma" for selecionada, pausa e limpa
+        soundWaveAudioRef.current.pause();
+        soundWaveAudioRef.current.src = '';
+      }
+    }
+  }, [selectedSound, soundWaveVolume]);
+
 
   const getStatusClass = () => {
     if (error) return 'status-error';
@@ -83,19 +124,75 @@ function AlunoView() {
             <p>Aguardando conexão com o professor...</p>
           </div>
 
+          {/* MODIFICADO: Esta seção agora contém os controles de áudio */}
           {isConnected && (
             <div className="audio-container">
-              <div className="info-box" style={{ background: '#d4edda', marginBottom: '10px' }}>
-                <p>✅ <strong>Conectado!</strong> O áudio do professor está sendo reproduzido.</p>
+              <div className="info-box" style={{ background: '#d4edda', marginBottom: '20px' }}>
+                <p>✅ <strong>Conectado!</strong> Ajuste os volumes como preferir.</p>
               </div>
+
+              {/* NOVO: Painel de Controle de Áudio */}
+              <div className="audio-controls">
+                <div className="control-group">
+                  <label htmlFor="prof-volume">🎙️ Volume do Professor</label>
+                  <input
+                    id="prof-volume"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={professorVolume}
+                    onChange={(e) => setProfessorVolume(Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="control-group">
+                  <label htmlFor="sound-select">🌊 Onda Sonora</label>
+                  <select
+                    id="sound-select"
+                    value={selectedSound}
+                    onChange={(e) => setSelectedSound(e.target.value)}
+                  >
+                    <option value="">Nenhuma</option>
+                    <option value="white-noise">Ruído Branco</option>
+                    <option value="pink-noise">Ruído Rosa</option>
+                    <option value="brown-noise">Ruído Marrom</option>
+                    <option value="beta-wave">Ondas Beta</option>
+                    <option value="theta-wave">Ondas Theta</option>
+                    {/* Adicione mais opções conforme os arquivos que você adicionou */}
+                  </select>
+                </div>
+                
+                <div className="control-group">
+                  <label htmlFor="sound-volume">🔊 Volume da Onda</label>
+                  <input
+                    id="sound-volume"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={soundWaveVolume}
+                    onChange={(e) => setSoundWaveVolume(Number(e.target.value))}
+                    disabled={!selectedSound} // Desabilita se nenhuma onda for selecionada
+                  />
+                </div>
+              </div>
+
+              {/* MODIFICADO: Player do professor agora não tem controles visíveis */}
               <audio 
-                ref={audioRef}
+                ref={professorAudioRef}
                 autoPlay
-                controls
                 playsInline
-              >
-                Seu navegador não suporta o elemento de áudio.
-              </audio>
+                style={{ display: 'none' }} // Oculto, pois controlamos via slider
+              />
+
+              {/* NOVO: Player da onda sonora, oculto e em loop */}
+              <audio
+                ref={soundWaveAudioRef}
+                loop
+                playsInline
+                style={{ display: 'none' }}
+              />
             </div>
           )}
         </>
