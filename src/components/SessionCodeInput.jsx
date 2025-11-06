@@ -6,60 +6,69 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
  * Componente para entrada de código de sessão com opção de escanear QR Code
  * @param {function} onConnect - Callback quando o código for submetido
  * @param {boolean} disabled - Se o input está desabilitado
+ * @param {string} initialCode - Código para pré-preencher o input
  */
-function SessionCodeInput({ onConnect, disabled }) {
-  const [code, setCode] = useState('');
+function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
+  // MODIFICADO: Usa initialCode para o estado inicial
+  const [code, setCode] = useState(initialCode);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [error, setError] = useState('');
 
   // Efeito para controlar o scanner de QR Code
   useEffect(() => {
-    // Só inicializa o scanner se showQRScanner for true
     if (showQRScanner) {
-      // ID do elemento div onde o scanner será renderizado
       const scannerRegionId = "qr-reader";
       
       const html5QrcodeScanner = new Html5QrcodeScanner(
         scannerRegionId,
         { 
-          fps: 10, // Quadros por segundo
-          qrbox: { width: 250, height: 250 } // Tamanho da caixa de leitura
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
         },
-        false // verbose
+        false
       );
 
-      // Callback de sucesso da leitura
       const onScanSuccess = (decodedText, decodedResult) => {
-        setError(''); // Limpa erros anteriores
+        setError('');
         
-        // Valida se o código lido parece um código de sessão
-        if (validateSessionCode(decodedText)) {
-          onConnect(decodedText);
-          setCode(decodedText);
-          setShowQRScanner(false); // Fecha o scanner
+        // NOVO: Validação flexível (pode ser a URL ou só o código)
+        let sessionCode = decodedText;
+
+        // Tenta extrair o código da URL, se for uma URL
+        if (decodedText.includes('?code=')) {
+          try {
+            const url = new URL(decodedText);
+            const codeFromUrl = url.searchParams.get('code');
+            if (codeFromUrl) {
+              sessionCode = codeFromUrl;
+            }
+          } catch (e) {
+            // Ignora, trata como texto plano
+          }
+        }
+        
+        if (validateSessionCode(sessionCode)) {
+          onConnect(sessionCode);
+          setCode(sessionCode);
+          setShowQRScanner(false);
         } else {
-          setError('QR code inválido. Por favor, escaneie o código da sessão (6 dígitos).');
-          // Não para o scanner, permite nova tentativa
+          setError('QR code inválido. Por favor, escaneie o código da sessão.');
         }
       };
 
-      // Callback de erro (ex: não achou QR code)
       const onScanError = (errorMessage) => {
-        // Não faz nada em erros comuns de "não encontrado"
+        // Não faz nada
       };
 
-      // Inicia o scanner
       html5QrcodeScanner.render(onScanSuccess, onScanError);
 
-      // Função de limpeza para parar o scanner quando o componente for desmontado
-      // ou quando showQRScanner se tornar false
       return () => {
         html5QrcodeScanner.clear().catch(err => {
           console.error("Falha ao limpar o Html5QrcodeScanner.", err);
         });
       };
     }
-  }, [showQRScanner, onConnect]); // Depende de showQRScanner e onConnect
+  }, [showQRScanner, onConnect]);
 
 
   const handleSubmit = (e) => {
@@ -79,9 +88,10 @@ function SessionCodeInput({ onConnect, disabled }) {
     setError('');
   };
 
-  // --- RENDERIZAÇÃO ---
-
-  // Modo Scanner Ativo
+  // ... (Renderização) ...
+  // O restante do arquivo (lógica de renderização) pode permanecer o mesmo.
+  // Apenas o <input> principal será pré-preenchido pelo useState.
+  // ... (return <div> ... <form> ... <input value={code} ... /> ... </form> ... </div>)
   if (showQRScanner) {
     return (
       <div style={{ 
@@ -91,7 +101,6 @@ function SessionCodeInput({ onConnect, disabled }) {
         borderRadius: '8px',
         border: '1px solid #ddd'
       }}>
-        {/* O scanner será renderizado aqui */}
         <div id="qr-reader" style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }}></div>
         
         {error && (
@@ -110,7 +119,7 @@ function SessionCodeInput({ onConnect, disabled }) {
           className="button button-secondary"
           onClick={() => {
             setShowQRScanner(false);
-            setError(''); // Limpa o erro ao cancelar
+            setError('');
           }}
           style={{ width: '100%', marginTop: '15px' }}
         >
@@ -120,7 +129,6 @@ function SessionCodeInput({ onConnect, disabled }) {
     );
   }
 
-  // Modo Padrão (Digitação)
   return (
     <div>
       <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }} className='connection-form'>
@@ -130,7 +138,7 @@ function SessionCodeInput({ onConnect, disabled }) {
         <div>
           <input
             type="text"
-            value={code}
+            value={code} // O valor será o 'initialCode' no primeiro render
             onChange={handleCodeChange}
             placeholder="000000"
             maxLength={6}
@@ -166,7 +174,6 @@ function SessionCodeInput({ onConnect, disabled }) {
         )}
       </form>
 
-      {/* Caixa do botão para ativar o scanner */}
       <div style={{ 
         marginTop: '20px', 
         padding: '15px', 

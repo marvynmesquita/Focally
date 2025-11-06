@@ -1,10 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Importar useEffect
 import ProfessorView from './ProfessorView';
 import AlunoView from './AlunoView';
 import './index.css';
 
 function App() {
   const [mode, setMode] = useState(null);
+  // NOVO: Estado para pré-preencher o código
+  const [prefilledCode, setPrefilledCode] = useState(null);
+
+  // NOVO: Efeito para ler a URL
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlMode = params.get('mode');
+      const urlCode = params.get('code');
+
+      if (urlMode === 'aluno') {
+        setMode('aluno');
+        if (urlCode && /^\d{6}$/.test(urlCode)) {
+          setPrefilledCode(urlCode);
+        }
+        // Limpa a URL para que o usuário possa recarregar a página sem
+        // ficar preso no modo aluno.
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch (e) {
+      console.error("Erro ao ler parâmetros da URL:", e);
+    }
+  }, []); // Executa apenas uma vez no carregamento
 
   return (
     <div className="app-container">
@@ -36,7 +59,12 @@ function App() {
           >
             ← Voltar à Seleção
           </button>
-          {mode === 'professor' ? <ProfessorView /> : <AlunoView />}
+          {mode === 'professor' ? (
+            <ProfessorView />
+          ) : (
+            // MODIFICADO: Passa o código pré-preenchido para AlunoView
+            <AlunoView prefilledCode={prefilledCode} />
+          )}
         </div>
       )}
     </div>
@@ -44,4 +72,3 @@ function App() {
 }
 
 export default App;
-

@@ -7,6 +7,10 @@ import { QRCodeSVG } from 'qrcode.react';
 function QRCodeDisplay({ sessionCode }) {
   if (!sessionCode) return null;
 
+  // NOVO: Obtém a URL base do site e monta a URL de "join"
+  const baseUrl = window.location.origin;
+  const joinUrl = `${baseUrl}/?mode=aluno&code=${sessionCode}`;
+
   return (
     <div style={{ 
       display: 'flex', 
@@ -35,9 +39,9 @@ function QRCodeDisplay({ sessionCode }) {
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
         <QRCodeSVG 
-          value={sessionCode}
+          value={joinUrl} // MODIFICADO: Usa a URL completa
           size={200}
-          level="H"
+          level="H" // Nível de correção alto, bom para URLs
           includeMargin={true}
         />
       </div>
@@ -54,4 +58,3 @@ function QRCodeDisplay({ sessionCode }) {
 }
 
 export default QRCodeDisplay;
-

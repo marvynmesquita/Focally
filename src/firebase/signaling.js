@@ -1,4 +1,4 @@
-import { ref, set, onValue, off, remove } from 'firebase/database';
+import { ref, set, onValue, off, remove, onChildAdded, onChildRemoved } from 'firebase/database';
 import { database, isFirebaseConfigured } from './config';
 
 /**
@@ -11,7 +11,7 @@ const checkFirebase = () => {
 };
 
 /**
- * Cria uma sessão de sinalização no Firebase
+ * Cria uma sessão de sinalização no Firebase (Armazena a oferta do professor)
  * @param {string} sessionCode - Código da sessão
  * @param {string} offer - SDP Offer
  */
@@ -20,30 +20,30 @@ export const createSession = async (sessionCode, offer) => {
   const sessionRef = ref(database, `sessions/${sessionCode}`);
   await set(sessionRef, {
     offer,
-    answer: null,
+    answers: {}, // Inicializa o nó para as respostas dos alunos
     createdAt: Date.now()
   });
 };
 
 /**
- * Escuta por mudanças na sessão (para aluno receber oferta e professor receber resposta)
+ * Escuta pela OFERTA do professor (usado pelo Aluno)
  * @param {string} sessionCode - Código da sessão
- * @param {function} callback - Callback chamado quando há mudanças
+ * @param {function} callback - Callback chamado quando a oferta é recebida
  * @param {function} errorCallback - Callback chamado em caso de erro no listener
  * @returns {function} Função para cancelar a escuta
  */
-export const listenToSession = (sessionCode, callback, errorCallback) => { // Adicionado errorCallback
+export const listenToSession = (sessionCode, callback, errorCallback) => {
   checkFirebase();
   const sessionRef = ref(database, `sessions/${sessionCode}`);
   
   const unsubscribe = onValue(sessionRef, 
-    (snapshot) => { // Callback de sucesso
+    (snapshot) => {
       const data = snapshot.val();
       if (data) {
         callback(data);
       }
     }, 
-    (error) => { // Callback de erro
+    (error) => {
       console.error('Erro ao escutar sessão no Firebase:', error);
       if (errorCallback) {
         errorCallback(error);
@@ -58,18 +58,62 @@ export const listenToSession = (sessionCode, callback, errorCallback) => { // Ad
 };
 
 /**
- * Envia a resposta (answer) para a sessão
+ * Envia a resposta (answer) de UM aluno para a sessão
  * @param {string} sessionCode - Código da sessão
+ * @param {string} studentId - ID único do aluno
  * @param {string} answer - SDP Answer
  */
-export const sendAnswer = async (sessionCode, answer) => {
+export const sendAnswer = async (sessionCode, studentId, answer) => {
   checkFirebase();
-  const answerRef = ref(database, `sessions/${sessionCode}/answer`);
+  const answerRef = ref(database, `sessions/${sessionCode}/answers/${studentId}`);
   await set(answerRef, answer);
 };
 
 /**
- * Limpa uma sessão do Firebase
+ * [NOVO] Escuta por novas respostas (answers) de alunos (usado pelo Professor)
+ * @param {string} sessionCode - Código da sessão
+ * @param {function} onAnswerCallback - Callback para quando um aluno entra (onChildAdded)
+ * @param {function} onAnswerRemovedCallback - Callback para quando um aluno sai (onChildRemoved)
+ * @returns {function} Função para cancelar a escuta
+ */
+export const listenForAnswers = (sessionCode, onAnswerCallback, onAnswerRemovedCallback) => {
+  checkFirebase();
+  const answersRef = ref(database, `sessions/${sessionCode}/answers`);
+  
+  // Escuta por novos alunos
+  const addedUnsubscribe = onChildAdded(answersRef, (snapshot) => {
+    const studentId = snapshot.key;
+    const answer = snapshot.val();
+    onAnswerCallback(studentId, answer);
+  });
+
+  // Escuta por alunos que saíram
+  const removedUnsubscribe = onChildRemoved(answersRef, (snapshot) => {
+    const studentId = snapshot.key;
+    onAnswerRemovedCallback(studentId);
+  });
+
+  return () => {
+    off(answersRef);
+    addedUnsubscribe();
+    removedUnsubscribe();
+  };
+};
+
+/**
+ * [NOVO] Aluno remove sua própria resposta ao sair
+ * @param {string} sessionCode - Código da sessão
+ * @param {string} studentId - ID único do aluno
+ */
+export const cleanupAnswer = async (sessionCode, studentId) => {
+  if (!isFirebaseConfigured || !database) return;
+  const answerRef = ref(database, `sessions/${sessionCode}/answers/${studentId}`);
+  await remove(answerRef);
+};
+
+
+/**
+ * Limpa uma sessão INTEIRA do Firebase (usado pelo Professor)
  * @param {string} sessionCode - Código da sessão
  */
 export const cleanupSession = async (sessionCode) => {
@@ -77,4 +121,3 @@ export const cleanupSession = async (sessionCode) => {
   const sessionRef = ref(database, `sessions/${sessionCode}`);
   await remove(sessionRef);
 };
-
