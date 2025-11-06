@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   createSession,
-  sendOffer,        // MODIFICADO
-  listenForAnswer,  // MODIFICADO
-  listenForOffers,  // MODIFICADO
-  sendAnswer,       // MODIFICADO
+  sendOffer,
+  listenForAnswer,
+  listenForOffers,
+  sendAnswer,
   cleanupSession,
-  cleanupOffer      // MODIFICADO
+  cleanupOffer
 } from './firebase/signaling';
 import { generateSessionCode } from './utils/sessionCode';
 
@@ -16,8 +16,12 @@ import { generateSessionCode } from './utils/sessionCode';
  * @returns {object} Objeto com estado e funções para gerenciar WebRTC
  */
 export const useWebRTC = (mode) => {
-  const savedSessionCode = typeof window !== 'undefined' ? localStorage.getItem('focally_session_code') : null;
-  const [status, setStatus] = useState('Aguardando...');
+  // [CORREÇÃO] Apenas o 'professor' deve ler do localStorage.
+  // O 'aluno' deve sempre começar com o estado limpo.
+  const savedSessionCode = (mode === 'professor' && typeof window !== 'undefined')
+    ? localStorage.getItem('focally_session_code')
+    : null;
+
   const [sessionCode, setSessionCode] = useState(savedSessionCode || '');
   const [error, setError] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -72,7 +76,7 @@ export const useWebRTC = (mode) => {
       
       if (mode === 'aluno') {
         pc.ontrack = (event) => {
-          console.log('Track recebido:', event.track); // Log linha 78
+          console.log('Track recebido:', event.track);
           remoteStreamRef.current = event.streams[0];
           setStatus('Conectado');
           setIsConnected(true);
@@ -81,7 +85,7 @@ export const useWebRTC = (mode) => {
 
       pc.oniceconnectionstatechange = () => {
         const id = studentId || studentIdRef.current || 'aluno';
-        console.log(`ICE Connection State (${id}):`, pc.iceConnectionState); // Log linha 88
+        console.log(`ICE Connection State (${id}):`, pc.iceConnectionState);
         
         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
           if (mode === 'aluno') {
@@ -126,7 +130,7 @@ export const useWebRTC = (mode) => {
   }, [mode]);
 
   /**
-   * [MODIFICADO] Inicia a transmissão de áudio (modo Professor)
+   * Inicia a transmissão de áudio (modo Professor)
    */
   const startTransmission = useCallback(async () => {
     try {
@@ -136,6 +140,8 @@ export const useWebRTC = (mode) => {
       const code = generateSessionCode();
       console.log('Código de sessão gerado:', code);
       sessionCodeRef.current = code;
+      
+      // Apenas o professor salva no localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('focally_session_code', code);
       }
@@ -153,7 +159,7 @@ export const useWebRTC = (mode) => {
       
       try {
         console.log('Criando sessão no Firebase com código:', code);
-        await createSession(code); // Não envia mais a oferta
+        await createSession(code);
         console.log('Sessão criada com sucesso no Firebase');
         setStatus('Aguardando alunos...');
       } catch (firebaseError) {
@@ -184,10 +190,10 @@ export const useWebRTC = (mode) => {
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Espera por ICE candidates
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
           const answerSDP = pc.localDescription.sdp;
-          await sendAnswer(code, studentId, answerSDP); // Envia a resposta ao aluno
+          await sendAnswer(code, studentId, answerSDP);
 
           peerConnectionsRef.current.set(studentId, pc);
           setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
@@ -210,7 +216,6 @@ export const useWebRTC = (mode) => {
         setIsConnected(size > 0);
       };
 
-      // MODIFICADO: Escuta por OFERTAS
       unsubscribeRef.current = listenForOffers(code, onNewOffer, onOfferRemoved);
 
     } catch (err) {
@@ -221,7 +226,7 @@ export const useWebRTC = (mode) => {
   }, [initializePeerConnection]);
 
   /**
-   * [MODIFICADO] Conecta usando o código de sessão (modo Aluno)
+   * Conecta usando o código de sessão (modo Aluno)
    */
   const connectWithSessionCode = useCallback(async (code) => {
     try {
@@ -231,22 +236,20 @@ export const useWebRTC = (mode) => {
       const studentId = 'student-' + Math.random().toString(36).substr(2, 9);
       studentIdRef.current = studentId;
       sessionCodeRef.current = code;
-      setSessionCode(code);
+      setSessionCode(code); // Define o código no estado *depois* de submetido
       
       const pc = initializePeerConnection();
       if (!pc) return;
 
-      // Aluno é RECEPTOR, então adiciona um transceiver "recvonly"
       pc.addTransceiver('audio', { direction: 'recvonly' });
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Espera por ICE
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const offerSDP = pc.localDescription.sdp;
       
-      // Escuta pela resposta do professor ANTES de enviar a oferta
       unsubscribeRef.current = listenForAnswer(code, studentId, async (answerSDP) => {
         try {
           if (pc.signalingState === 'have-local-offer') {
@@ -264,11 +267,10 @@ export const useWebRTC = (mode) => {
         setError('Erro ao escutar a resposta: ' + firebaseError.message);
       });
 
-      // Agora envia a oferta
       await sendOffer(code, studentId, offerSDP);
       setStatus('Oferta enviada, aguardando resposta...');
 
-    } catch (err) { // <-- ESTA CHAVE ESTAVA FALTANDO
+    } catch (err) {
       console.error('Erro ao conectar com código de sessão:', err);
       setError('Erro ao conectar: ' + err.message);
       setStatus('Erro');
@@ -301,12 +303,12 @@ export const useWebRTC = (mode) => {
         localStreamRef.current.getTracks().forEach(track => track.stop());
         localStreamRef.current = null;
       }
+      // Apenas o professor limpa o localStorage
       if (typeof window !== 'undefined') {
         localStorage.removeItem('focally_session_code');
       }
 
     } else if (mode === 'aluno') {
-      // Aluno: Limpa SÓ A SUA OFERTA/RESPOSTA
       if (currentSessionCode && currentStudentId) {
         try {
           await cleanupOffer(currentSessionCode, currentStudentId);
@@ -323,7 +325,7 @@ export const useWebRTC = (mode) => {
 
     setIsConnected(false);
     setStatus('Aguardando...');
-    setSessionCode('');
+    setSessionCode(''); // Reseta o estado
     sessionCodeRef.current = '';
     studentIdRef.current = null;
     setError(null);
