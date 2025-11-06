@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { 
-  createSession, 
-  listenToSession, 
-  sendAnswer, 
+import {
+  createSession,
+  sendOffer,        // MODIFICADO
+  listenForAnswer,  // MODIFICADO
+  listenForOffers,  // MODIFICADO
+  sendAnswer,       // MODIFICADO
   cleanupSession,
-  listenForAnswers, // NOVO
-  cleanupAnswer     // NOVO
+  cleanupOffer      // MODIFICADO
 } from './firebase/signaling';
 import { generateSessionCode } from './utils/sessionCode';
 
@@ -21,7 +22,6 @@ export const useWebRTC = (mode) => {
   const [error, setError] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   
-  // MODIFICADO: Professor gerencia MÚLTIPLAS conexões, Aluno apenas UMA
   const peerConnectionRef = useRef(null); // Para o aluno
   const peerConnectionsRef = useRef(new Map()); // Para o professor <studentId, RTCPeerConnection>
   
@@ -30,15 +30,13 @@ export const useWebRTC = (mode) => {
   const unsubscribeRef = useRef(null);
   const sessionCodeRef = useRef(savedSessionCode || '');
   
-  // NOVO: Refs para o ID do aluno e a oferta do professor
-  const studentIdRef = useRef(null);
-  const offerRef = useRef(null);
+  const studentIdRef = useRef(null); // Apenas para o aluno
 
   const rtcConfig = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
-      // ... (servidores TURN existentes) ...
+      // Seus servidores TURN
       {
         urls: "stun:stun.relay.metered.ca:80",
       },
@@ -68,24 +66,22 @@ export const useWebRTC = (mode) => {
   /**
    * Inicializa a conexão RTCPeerConnection
    */
-  const initializePeerConnection = useCallback((studentId = null) => { // studentId é para o professor
+  const initializePeerConnection = useCallback((studentId = null) => {
     try {
       const pc = new RTCPeerConnection(rtcConfig);
       
-      // SÓ o aluno recebe áudio
       if (mode === 'aluno') {
         pc.ontrack = (event) => {
-          console.log('Track recebido:', event.track);
+          console.log('Track recebido:', event.track); // Log linha 78
           remoteStreamRef.current = event.streams[0];
           setStatus('Conectado');
           setIsConnected(true);
         };
       }
 
-      // Handler para mudanças no estado da conexão ICE
       pc.oniceconnectionstatechange = () => {
-        const id = studentId || 'aluno';
-        console.log(`ICE Connection State (${id}):`, pc.iceConnectionState);
+        const id = studentId || studentIdRef.current || 'aluno';
+        console.log(`ICE Connection State (${id}):`, pc.iceConnectionState); // Log linha 88
         
         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
           if (mode === 'aluno') {
@@ -98,15 +94,15 @@ export const useWebRTC = (mode) => {
           }
         
         } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+          console.error(`Erro de conexão WebRTC (${id}): Estado mudou para`, pc.iceConnectionState);
           if (mode === 'professor' && studentId) {
-            // Um aluno específico desconectou
             console.log('Aluno desconectado:', studentId);
             pc.close();
             peerConnectionsRef.current.delete(studentId);
-            setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
-            setIsConnected(peerConnectionsRef.current.size > 0);
+            const size = peerConnectionsRef.current.size;
+            setStatus(size > 0 ? `Transmitindo para ${size} aluno(s)` : 'Aguardando alunos...');
+            setIsConnected(size > 0);
           } else if (mode === 'aluno') {
-            // O aluno foi desconectado
             setStatus('Conexão perdida');
             setError('A conexão falhou ou foi desconectada.');
             setIsConnected(false);
@@ -114,7 +110,6 @@ export const useWebRTC = (mode) => {
         }
       };
 
-      // Handler para erros
       pc.onerror = (error) => {
         console.error('Erro na conexão WebRTC:', error);
         setError('Erro na conexão WebRTC');
@@ -131,7 +126,7 @@ export const useWebRTC = (mode) => {
   }, [mode]);
 
   /**
-   * Inicia a transmissão de áudio (modo Professor)
+   * [MODIFICADO] Inicia a transmissão de áudio (modo Professor)
    */
   const startTransmission = useCallback(async () => {
     try {
@@ -156,32 +151,9 @@ export const useWebRTC = (mode) => {
       
       localStreamRef.current = stream;
       
-      setStatus('Criando oferta...');
-
-      // MODIFICADO: Cria um PC temporário APENAS para gerar a oferta
-      const tempPC = initializePeerConnection();
-      if (!tempPC) {
-        setError('Erro ao inicializar conexão WebRTC');
-        return;
-      }
-      stream.getAudioTracks().forEach(track => {
-        tempPC.addTrack(track, stream);
-      });
-      const offer = await tempPC.createOffer({
-        offerToReceiveAudio: false,
-        offerToReceiveVideo: false
-      });
-      await tempPC.setLocalDescription(offer);
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const offerSDP = tempPC.localDescription.sdp;
-      offerRef.current = offerSDP; // Salva a oferta no Ref
-      tempPC.close(); // Fecha o PC temporário
-
-      // Criar sessão no Firebase com a oferta
       try {
         console.log('Criando sessão no Firebase com código:', code);
-        await createSession(code, offerSDP);
+        await createSession(code); // Não envia mais a oferta
         console.log('Sessão criada com sucesso no Firebase');
         setStatus('Aguardando alunos...');
       } catch (firebaseError) {
@@ -191,38 +163,42 @@ export const useWebRTC = (mode) => {
         return;
       }
 
-      // NOVO: Handler para quando um novo aluno envia uma resposta
-      const onNewAnswer = async (studentId, answerSDP) => {
+      // Handler para quando um novo aluno envia uma OFERTA
+      const onNewOffer = async (studentId, offerSDP) => {
         try {
-          console.log('Recebida nova resposta de:', studentId);
+          console.log('Recebida nova oferta de:', studentId);
           if (peerConnectionsRef.current.has(studentId)) {
             console.warn('Conexão já existe para o aluno:', studentId);
             return;
           }
           setStatus('Processando novo aluno...');
-          const pc = initializePeerConnection(studentId); // Passa o studentId
+          const pc = initializePeerConnection(studentId);
           
           localStreamRef.current.getAudioTracks().forEach(track => {
             pc.addTrack(track, localStreamRef.current);
           });
 
-          const offerDesc = new RTCSessionDescription({ type: 'offer', sdp: offerRef.current });
-          const answerDesc = new RTCSessionDescription({ type: 'answer', sdp: answerSDP });
+          const offerDesc = new RTCSessionDescription({ type: 'offer', sdp: offerSDP });
+          await pc.setRemoteDescription(offerDesc);
 
-          // Define as descrições na ordem correta para o "ofertante"
-          await pc.setLocalDescription(offerDesc);
-          await pc.setRemoteDescription(answerDesc);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Espera por ICE candidates
 
-          peerConnectionsRef.current.set(studentId, pc); // Armazena a nova conexão
+          const answerSDP = pc.localDescription.sdp;
+          await sendAnswer(code, studentId, answerSDP); // Envia a resposta ao aluno
+
+          peerConnectionsRef.current.set(studentId, pc);
           setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
           setIsConnected(true);
         } catch (err) {
-          console.error('Erro ao processar resposta do aluno:', studentId, err);
+          console.error('Erro ao processar oferta do aluno:', studentId, err);
         }
       };
 
-      // NOVO: Handler para quando um aluno remove sua resposta (desconecta)
-      const onAnswerRemoved = (studentId) => {
+      // Handler para quando um aluno remove sua oferta (desconecta)
+      const onOfferRemoved = (studentId) => {
         console.log('Aluno removido:', studentId);
         const pc = peerConnectionsRef.current.get(studentId);
         if (pc) {
@@ -234,8 +210,8 @@ export const useWebRTC = (mode) => {
         setIsConnected(size > 0);
       };
 
-      // MODIFICADO: Escuta por RESPOSTAS, não pela sessão inteira
-      unsubscribeRef.current = listenForAnswers(code, onNewAnswer, onAnswerRemoved);
+      // MODIFICADO: Escuta por OFERTAS
+      unsubscribeRef.current = listenForOffers(code, onNewOffer, onOfferRemoved);
 
     } catch (err) {
       console.error('Erro ao iniciar transmissão:', err);
@@ -245,7 +221,7 @@ export const useWebRTC = (mode) => {
   }, [initializePeerConnection]);
 
   /**
-   * Conecta usando o código de sessão (modo Aluno)
+   * [MODIFICADO] Conecta usando o código de sessão (modo Aluno)
    */
   const connectWithSessionCode = useCallback(async (code) => {
     try {
@@ -253,54 +229,46 @@ export const useWebRTC = (mode) => {
       setStatus('Conectando à sessão...');
       
       const studentId = 'student-' + Math.random().toString(36).substr(2, 9);
-      studentIdRef.current = studentId; // Salva o ID único do aluno
+      studentIdRef.current = studentId;
       sessionCodeRef.current = code;
       setSessionCode(code);
+      
+      const pc = initializePeerConnection();
+      if (!pc) return;
 
-      const unsubscribe = listenToSession(code, async (sessionData) => {
-        // MODIFICADO: Garante que só rode uma vez
-        if (sessionData.offer && !peerConnectionRef.current) {
-          try {
-            setStatus('Processando oferta...');
+      // Aluno é RECEPTOR, então adiciona um transceiver "recvonly"
+      pc.addTransceiver('audio', { direction: 'recvonly' });
 
-            const pc = initializePeerConnection();
-            if (!pc) return;
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Espera por ICE
 
-            const offer = new RTCSessionDescription({
-              type: 'offer',
-              sdp: sessionData.offer
-            });
-
-            await pc.setRemoteDescription(offer);
-
-            setStatus('Criando resposta...');
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const answerSDP = pc.localDescription.sdp;
-            
-            // MODIFICADO: Envia a resposta com o studentId
-            await sendAnswer(code, studentIdRef.current, answerSDP);
-            
-            peerConnectionRef.current = pc; // Salva a conexão única do aluno
-            setStatus('Aguardando conexão...');
-          } catch (err) {
-            console.error('Erro ao processar oferta:', err);
-            setError('Erro ao processar oferta: ' + err.message);
-            setStatus('Erro');
+      const offerSDP = pc.localDescription.sdp;
+      
+      // Escuta pela resposta do professor ANTES de enviar a oferta
+      unsubscribeRef.current = listenForAnswer(code, studentId, async (answerSDP) => {
+        try {
+          if (pc.signalingState === 'have-local-offer') {
+            setStatus('Resposta recebida, conectando...');
+            const answerDesc = new RTCSessionDescription({ type: 'answer', sdp: answerSDP });
+            await pc.setRemoteDescription(answerDesc);
+            peerConnectionRef.current = pc;
           }
+        } catch (err) {
+           console.error('Erro ao definir resposta remota:', err);
+           setError('Erro ao processar resposta: ' + err.message);
         }
-      },
-      (firebaseError) => {
+      }, (firebaseError) => {
         console.error('Erro no listener do Firebase (Aluno):', firebaseError);
-        setError('Erro ao escutar a sessão: ' + firebaseError.message);
-        setStatus('Erro');
+        setError('Erro ao escutar a resposta: ' + firebaseError.message);
       });
 
-      unsubscribeRef.current = unsubscribe;
+      // Agora envia a oferta
+      await sendOffer(code, studentId, offerSDP);
+      setStatus('Oferta enviada, aguardando resposta...');
 
-    } catch (err) {
+    } catch (err) { // <-- ESTA CHAVE ESTAVA FALTANDO
       console.error('Erro ao conectar com código de sessão:', err);
       setError('Erro ao conectar: ' + err.message);
       setStatus('Erro');
@@ -320,7 +288,6 @@ export const useWebRTC = (mode) => {
     }
 
     if (mode === 'professor') {
-      // Professor: Limpa a sessão inteira e fecha todas as conexões
       if (currentSessionCode) {
         try {
           await cleanupSession(currentSessionCode);
@@ -339,12 +306,12 @@ export const useWebRTC = (mode) => {
       }
 
     } else if (mode === 'aluno') {
-      // Aluno: Limpa SÓ A SUA resposta e fecha sua única conexão
+      // Aluno: Limpa SÓ A SUA OFERTA/RESPOSTA
       if (currentSessionCode && currentStudentId) {
         try {
-          await cleanupAnswer(currentSessionCode, currentStudentId);
+          await cleanupOffer(currentSessionCode, currentStudentId);
         } catch (err) {
-          console.error('Erro ao limpar resposta do aluno:', err);
+          console.error('Erro ao limpar oferta do aluno:', err);
         }
       }
       if (peerConnectionRef.current) {
@@ -359,9 +326,8 @@ export const useWebRTC = (mode) => {
     setSessionCode('');
     sessionCodeRef.current = '';
     studentIdRef.current = null;
-    offerRef.current = null;
     setError(null);
-  }, [mode]); // Adiciona 'mode' como dependência
+  }, [mode]);
 
   // Limpar quando o componente for desmontado
   useEffect(() => {
