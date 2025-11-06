@@ -127,7 +127,7 @@ export const useWebRTC = (mode) => {
       setStatus('Erro');
       return null;
     }
-  }, [mode]);
+  }, [mode]); // [CORREÇÃO]: A dependência 'mode' já estava correta aqui.
 
   /**
    * Inicia a transmissão de áudio (modo Professor)
@@ -141,7 +141,6 @@ export const useWebRTC = (mode) => {
       console.log('Código de sessão gerado:', code);
       sessionCodeRef.current = code;
       
-      // Apenas o professor salva no localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('focally_session_code', code);
       }
@@ -223,7 +222,7 @@ export const useWebRTC = (mode) => {
       setError('Erro ao iniciar transmissão: ' + err.message);
       setStatus('Erro');
     }
-  }, [initializePeerConnection]);
+  }, [initializePeerConnection, setStatus, setError]); // [CORREÇÃO] Adicionado setStatus e setError
 
   /**
    * Conecta usando o código de sessão (modo Aluno)
@@ -236,7 +235,7 @@ export const useWebRTC = (mode) => {
       const studentId = 'student-' + Math.random().toString(36).substr(2, 9);
       studentIdRef.current = studentId;
       sessionCodeRef.current = code;
-      setSessionCode(code); // Define o código no estado *depois* de submetido
+      setSessionCode(code);
       
       const pc = initializePeerConnection();
       if (!pc) return;
@@ -275,7 +274,7 @@ export const useWebRTC = (mode) => {
       setError('Erro ao conectar: ' + err.message);
       setStatus('Erro');
     }
-  }, [initializePeerConnection]);
+  }, [initializePeerConnection, setStatus, setError]); // [CORREÇÃO] Adicionado setStatus e setError
 
   /**
    * Limpa recursos e fecha conexões
@@ -303,7 +302,6 @@ export const useWebRTC = (mode) => {
         localStreamRef.current.getTracks().forEach(track => track.stop());
         localStreamRef.current = null;
       }
-      // Apenas o professor limpa o localStorage
       if (typeof window !== 'undefined') {
         localStorage.removeItem('focally_session_code');
       }
@@ -325,11 +323,11 @@ export const useWebRTC = (mode) => {
 
     setIsConnected(false);
     setStatus('Aguardando...');
-    setSessionCode(''); // Reseta o estado
+    setSessionCode('');
     sessionCodeRef.current = '';
     studentIdRef.current = null;
     setError(null);
-  }, [mode]);
+  }, [mode]); // [CORREÇÃO]: A dependência 'mode' já estava correta aqui.
 
   // Limpar quando o componente for desmontado
   useEffect(() => {
