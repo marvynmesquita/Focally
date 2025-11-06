@@ -25,6 +25,7 @@ export const useWebRTC = (mode) => {
   const [sessionCode, setSessionCode] = useState(savedSessionCode || '');
   const [error, setError] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [status, setStatus] = useState('Aguardando...');
   
   const peerConnectionRef = useRef(null); // Para o aluno
   const peerConnectionsRef = useRef(new Map()); // Para o professor <studentId, RTCPeerConnection>
