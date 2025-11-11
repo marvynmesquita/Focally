@@ -44,13 +44,14 @@ export default defineConfig({
         name: 'Focally',
         short_name: 'Focally',
         description: 'Transmissão de Áudio Assistiva',
-        start_url: '.',
+        start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#ffffff',
+        lang: 'pt-BR',
         icons: [
           { src: '/image/logo-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/image/logo-512.png', sizes: '512x512', type: 'image/png' }
+          { src: '/image/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
         ]
       }
     })

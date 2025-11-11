@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'; // Importar useEffect
 import ProfessorView from './ProfessorView';
 import AlunoView from './AlunoView';
 import './index.css';
+import InstallPrompt from './components/InstallPrompt'
 
 function App() {
   const [mode, setMode] = useState(null);
@@ -31,6 +32,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <InstallPrompt />
       <img src="/image/logo.png" alt="Focally Logo" className='logo' />
       
       {!mode ? (
