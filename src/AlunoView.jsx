@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useWebRTC } from './useWebRTC';
 import SessionCodeInput from './components/SessionCodeInput';
 import { isFirebaseConfigured } from './firebase/config';
+import DeviceStatus from './components/DeviceStatus';
 
 function AlunoView() {
   const {
@@ -80,6 +81,7 @@ function AlunoView() {
 
   return (
     <div>
+      <DeviceStatus />
       <h2>Modo: Aluno (Receptor)</h2>
       
       <div className={`status-indicator ${getStatusClass()}`}>

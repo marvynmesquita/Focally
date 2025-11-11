@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useWebRTC } from './useWebRTC';
 import QRCodeDisplay from './components/QRCodeDisplay';
 import { isFirebaseConfigured } from './firebase/config';
+import DeviceStatus from './components/DeviceStatus';
 
 function ProfessorView() {
   const {
@@ -50,6 +51,7 @@ function ProfessorView() {
 
   return (
     <div>
+      <DeviceStatus />
       <h2>Modo: Professor (Transmissor)</h2>
       
       <div className={`status-indicator ${getStatusClass()}`}>
