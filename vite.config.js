@@ -49,9 +49,24 @@ export default defineConfig({
         background_color: '#ffffff',
         theme_color: '#ffffff',
         lang: 'pt-BR',
+        id: '/',
         icons: [
           { src: '/image/logo-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/image/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+          { src: '/image/logo-512.png', sizes: '512x512', type: 'image/png' }
+        ],
+        screenshots: [
+          {
+            src: '/image/screenshot-wide.png',
+            sizes: '810x540',
+            type: 'image/png',
+            form_factor: 'wide'
+          },
+          {
+            src: '/image/screenshot-narrow.png',
+            sizes: '540x720',
+            type: 'image/png',
+            form_factor: 'narrow'
+          }
         ]
       }
     })
@@ -68,5 +83,8 @@ export default defineConfig({
     host: '0.0.0.0', // Escuta em todas as interfaces (necessário para Render)
     strictPort: true,
   },
+  build: {
+    chunkSizeWarningLimit: 1000 // Increase limit from 500KB to 1000KB
+  }
 })
 

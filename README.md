@@ -138,3 +138,73 @@ Siga as instruções detalhadas em [FIREBASE_SETUP.md](./FIREBASE_SETUP.md).
 ## 📄 Licença
 
 Este projeto é um MVP educacional e de pesquisa.
+
+## 📲 PWA (Progressive Web App)
+
+O Focally é agora um PWA, permitindo instalação no dispositivo para acesso mais rápido!
+
+### Como instalar
+
+#### Desktop (Chrome, Edge)
+1. Acesse o site: https://focally.onrender.com
+2. Procure pelo ícone de "Instalar" na barra de endereços (ou menu)
+3. Clique em "Instalar" e confirme
+
+#### Mobile (Android Chrome)
+1. Abra https://focally.onrender.com no Chrome
+2. Toque no menu ⋮ → "Instalar app"
+3. Confirme a instalação
+4. O app aparecerá na tela inicial
+
+#### iOS (Safari)
+1. Abra https://focally.onrender.com no Safari
+2. Toque em "Compartilhar" → "Adicionar à Tela Inicial"
+3. Dê um nome (sugerido: "Focally")
+4. O app será adicionado à tela inicial
+
+### Recursos PWA
+
+- ✅ **Instalação em dispositivo** — Acesso mais rápido sem abrir navegador
+- ✅ **Funciona offline** — Recursos cacheados estão disponíveis offline
+- ✅ **Notificação de atualização** — Aviso automático quando nova versão está disponível
+- ✅ **Ícone customizado** — Logo exibido na tela inicial/drawer
+- ✅ **Interface standalone** — App roda sem barra de endereços (como app nativo)
+
+### Testar em desenvolvimento
+
+Se quiser testar o PWA localmente:
+
+1. Limpe o service worker anterior (se houver):
+   - No DevTools → Application → Service Workers → desregistre
+   - Ou limpe Application Cache/Storage
+
+2. Rode o build de produção:
+```bash
+npm run build
+npm run preview
+# Abra http://localhost:4000
+```
+
+3. Verifique no DevTools (Application tab):
+   - **Manifest**: deve mostrar nome, ícones e descrição
+   - **Service Workers**: deve estar registrado e ativo
+   - **Storage**: deve haver cache de assets
+
+### Desregistrar service worker em desenvolvimento
+
+Se o service worker anterior interferir no `npm run dev`:
+1. Abra DevTools → Application → Service Workers
+2. Clique em "Unregister" para remover o SW
+3. Limpe o Application Cache
+4. Recarregue a página
+
+Nota: O app desregistra automaticamente SWs em modo de desenvolvimento para evitar conflitos.
+
+### Estratégias de cache
+
+O app usa as seguintes estratégias de cache (Workbox):
+- **Audio (`/audio/*`)**: Cache primeiro (atualiza a cada 30 dias)
+- **Imagens (`/image/*`, `/assets/*`)**: Cache primeiro (atualiza a cada 30 dias)
+- **API (`/api/*`)**: Rede primeiro, fallback para cache
+
+Isso garante acesso rápido a recursos frequentes e funcionalidade offline quando possível.
