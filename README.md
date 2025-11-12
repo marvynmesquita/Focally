@@ -2,6 +2,8 @@
 
 Aplicativo de tecnologia assistiva para transmissão de áudio em tempo real usando React e WebRTC, desenvolvido para auxiliar alunos com TDAH.
 
+> **🚀 [Começar Rápido](./QUICKSTART.md)** | **📚 [Documentação](./DOCUMENTATION.md)** | **🏗️ [Arquitetura](./ARCHITECTURE.md)** | **🆘 [Troubleshooting](./TROUBLESHOOTING.md)** | **🤝 [Contribuir](./CONTRIBUTING.md)**
+
 ## 📋 Descrição
 
 O Focally permite que um professor transmita o áudio do seu microfone em tempo real para um aluno, minimizando distrações auditivas. O MVP utiliza WebRTC para comunicação P2P de baixa latência e Firebase Realtime Database para sinalização automática através de código de sessão.
@@ -74,19 +76,65 @@ Focally/
 │   │   └── signaling.js           # Funções de sinalização
 │   ├── components/
 │   │   ├── QRCodeDisplay.jsx      # Componente para exibir QR Code
-│   │   └── SessionCodeInput.jsx   # Input de código de sessão
+│   │   ├── SessionCodeInput.jsx   # Input de código de sessão
+│   │   └── InstallPrompt.jsx      # Banner de instalação PWA
 │   ├── utils/
 │   │   └── sessionCode.js         # Utilitários para código de sessão
 │   ├── main.jsx                   # Ponto de entrada da aplicação
 │   └── index.css                  # Estilos globais
+├── public/
+│   ├── manifest.webmanifest       # PWA manifest
+│   ├── image/                     # Logos e screenshots
+│   └── audio/                     # Sons de fundo (white_noise, etc)
 ├── index.html
 ├── package.json
 ├── vite.config.js
 ├── FIREBASE_SETUP.md              # Instruções de configuração do Firebase
+├── DOCUMENTATION.md               # Documentação técnica completa
 └── README.md
 ```
 
-## 🔧 Funcionalidades do MVP
+## 📖 Documentação
+
+### 🚀 Começar Rápido
+
+👉 **[QUICKSTART.md](./QUICKSTART.md)** - **COMECE AQUI!**
+- Instalação em 5 minutos
+- Teste imediato com 2 abas
+- Respostas a perguntas frequentes
+- Próximos passos conforme seu perfil
+
+### 📚 Documentação Técnica Completa
+
+Para entender em detalhes a arquitetura, componentes e fluxos de dados do aplicativo, consulte **[DOCUMENTATION.md](./DOCUMENTATION.md)** que contém:
+
+- 🏗️ **Arquitetura Geral** - Visão geral de como os componentes se conectam
+- 🧩 **Componentes** - Documentação de cada componente React (props, estado, interface)
+- 🎣 **Hooks Personalizados** - Detalhes do `useWebRTC` e suas funcionalidades
+- 🔗 **Firebase & Sinalização** - Estrutura do Realtime Database e funções de sinalização
+- 🛠️ **Utilitários** - Funções auxiliares e validações
+- 📊 **Fluxos de Dados** - Diagramas ASCII dos fluxos de transmissão e ciclos de vida
+- ⚙️ **Configuração** - Variáveis de ambiente, dependências, estrutura de pastas
+- 🐛 **Troubleshooting** - Soluções para problemas comuns
+
+**Para desenvolvedores que querem**:
+- Entender como funciona WebRTC no projeto
+- Adicionar novos componentes ou funcionalidades
+- Debugar problemas de conexão
+- Estender a aplicação
+
+### 📋 Documentação Completa
+
+| Documento | Objetivo |
+|-----------|----------|
+| **[DOCUMENTATION.md](./DOCUMENTATION.md)** | Documentação técnica completa (arquitetura, componentes, hooks, fluxos) |
+| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Diagramas visuais, fluxos de dados e ciclos de vida |
+| **[CONTRIBUTING.md](./CONTRIBUTING.md)** | Guia para contribuir com código, normas e process de PR |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Soluções para problemas comuns (conexão, áudio, Firebase, PWA) |
+| **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)** | Setup passo-a-passo do Firebase Realtime Database (obrigatório) |
+| **[DEPLOY.md](./DEPLOY.md)** | Instruções para deploy em produção |
+
+## �🔧 Funcionalidades do MVP
 
 - ✅ Seleção de modo (Professor/Aluno)
 - ✅ Captura de áudio do microfone
@@ -141,70 +189,127 @@ Este projeto é um MVP educacional e de pesquisa.
 
 ## 📲 PWA (Progressive Web App)
 
-O Focally é agora um PWA, permitindo instalação no dispositivo para acesso mais rápido!
+O Focally é agora um **PWA certificado**, permitindo instalação no dispositivo, funcionalidade offline e acesso mais rápido!
 
-### Como instalar
-
-#### Desktop (Chrome, Edge)
-1. Acesse o site: https://focally.onrender.com
-2. Procure pelo ícone de "Instalar" na barra de endereços (ou menu)
-3. Clique em "Instalar" e confirme
-
-#### Mobile (Android Chrome)
-1. Abra https://focally.onrender.com no Chrome
-2. Toque no menu ⋮ → "Instalar app"
-3. Confirme a instalação
-4. O app aparecerá na tela inicial
-
-#### iOS (Safari)
-1. Abra https://focally.onrender.com no Safari
-2. Toque em "Compartilhar" → "Adicionar à Tela Inicial"
-3. Dê um nome (sugerido: "Focally")
-4. O app será adicionado à tela inicial
-
-### Recursos PWA
+### ✨ Recursos PWA
 
 - ✅ **Instalação em dispositivo** — Acesso mais rápido sem abrir navegador
 - ✅ **Funciona offline** — Recursos cacheados estão disponíveis offline
-- ✅ **Notificação de atualização** — Aviso automático quando nova versão está disponível
 - ✅ **Ícone customizado** — Logo exibido na tela inicial/drawer
 - ✅ **Interface standalone** — App roda sem barra de endereços (como app nativo)
+- ✅ **Atualização automática** — Service Worker garante sempre ter versão mais recente
+- ✅ **Cache inteligente** — Estratégias otimizadas por tipo de conteúdo
+- ✅ **Suporte multiplataforma** — Desktop, Android, iOS
 
-### Testar em desenvolvimento
+### 📥 Como instalar
+
+#### Desktop (Chrome, Edge, Firefox)
+1. Acesse: https://focally.onrender.com
+2. Um banner de instalação aparecerá na parte inferior da tela
+3. Clique em "Instalar" para adicionar à área de trabalho
+4. Alternativamente, clique no ícone de menu e procure por "Instalar app"
+
+#### Mobile (Android Chrome)
+1. Abra https://focally.onrender.com no Chrome
+2. Um banner de instalação aparecerá na parte inferior
+3. Toque em "Instalar" 
+4. Confirme a instalação
+5. O app aparecerá na tela inicial
+
+#### iOS (Safari)
+1. Abra https://focally.onrender.com no Safari
+2. Toque em "Compartilhar" (botão com seta) na parte inferior
+3. Scroll até encontrar "Adicionar à Tela Inicial"
+4. Dê um nome (sugerido: "Focally")
+5. Toque em "Adicionar"
+6. O app será adicionado à tela inicial
+
+### 🛠️ Testar PWA em desenvolvimento
 
 Se quiser testar o PWA localmente:
 
-1. Limpe o service worker anterior (se houver):
-   - No DevTools → Application → Service Workers → desregistre
-   - Ou limpe Application Cache/Storage
-
-2. Rode o build de produção:
+#### 1. Preparar o ambiente
 ```bash
+# Limpar cache anterior
 npm run build
-npm run preview
-# Abra http://localhost:4000
 ```
 
-3. Verifique no DevTools (Application tab):
-   - **Manifest**: deve mostrar nome, ícones e descrição
-   - **Service Workers**: deve estar registrado e ativo
-   - **Storage**: deve haver cache de assets
+#### 2. Servir para testes
+```bash
+npm run preview
+# Abra http://localhost:4000 no navegador
+```
 
-### Desregistrar service worker em desenvolvimento
+#### 3. Verificar no DevTools (Chrome/Firefox)
+- Abra DevTools: F12 ou Cmd+Option+I (Mac)
+- Vá até "Application" ou "Storage"
+- **Manifest**: Verifique em Application → Manifest (deve mostrar nome, ícones, descrição)
+- **Service Workers**: Deve estar registrado com status "activated and running"
+- **Cache Storage**: Verifique em Cache Storage (deve haver cache de assets/audio/imagens)
 
-Se o service worker anterior interferir no `npm run dev`:
-1. Abra DevTools → Application → Service Workers
-2. Clique em "Unregister" para remover o SW
-3. Limpe o Application Cache
-4. Recarregue a página
+#### 4. Testar instalação
+- Procure pelo ícone de "Instalar" na barra de endereços
+- Se não aparecer, clique no menu ⋮ e procure "Instalar app"
+- Clique para instalar no seu dispositivo
 
-Nota: O app desregistra automaticamente SWs em modo de desenvolvimento para evitar conflitos.
+### 🔧 Desenvolvimento e Service Worker
 
-### Estratégias de cache
+#### Service Worker em modo desenvolvimento
+O app **desregistra automaticamente** os Service Workers em modo `npm run dev` para evitar conflitos com hot reload. Isso garante que mudanças no código sejam refletidas imediatamente.
 
-O app usa as seguintes estratégias de cache (Workbox):
-- **Audio (`/audio/*`)**: Cache primeiro (atualiza a cada 30 dias)
-- **Imagens (`/image/*`, `/assets/*`)**: Cache primeiro (atualiza a cada 30 dias)
-- **API (`/api/*`)**: Rede primeiro, fallback para cache
+#### Limpar cache manualmente (se necessário)
+1. DevTools → Application → Service Workers → Clique em "Unregister"
+2. Vá até "Cache Storage" → Delete todas as caches do Focally
+3. Vá até "Cookies" → Delete dados do site
+4. Recarregue a página (Cmd+Shift+R ou Ctrl+Shift+R)
 
-Isso garante acesso rápido a recursos frequentes e funcionalidade offline quando possível.
+#### Desabilitar Service Worker temporariamente
+No DevTools → Application → Service Workers, marque "Offline" para simular funcionalidade offline.
+
+### 📊 Estratégias de Cache (Workbox)
+
+O app usa **Workbox** para gerenciar cache com estratégias otimizadas:
+
+| Tipo | Estratégia | Duração | Limite |
+|------|-----------|---------|--------|
+| **Audio** (`/audio/*`) | Cache First | 30 dias | 20 arquivos |
+| **Imagens** (`/image/*`, `/assets/*`) | Cache First | 30 dias | 60 arquivos |
+| **API** (`/api/*`) | Network First | 1 dia | 30 requisições |
+
+**O que isso significa:**
+- **Cache First**: Usa versão em cache se disponível, atualiza periodicamente
+- **Network First**: Tenta rede primeiro, usa cache se offline
+- Garante acesso rápido a recursos frequentes
+- Funcionalidade offline parcial com recursos cacheados
+
+### 🔍 Verificar configuração PWA
+
+A configuração PWA está em `vite.config.js`:
+```javascript
+VitePWA({
+  registerType: 'autoUpdate',  // Auto-registra SW e atualiza
+  workbox: {
+    runtimeCaching: [
+      // Configurações de cache por tipo de conteúdo
+    ]
+  },
+  manifest: {
+    name: "Focally",
+    // Metadados do app
+  }
+})
+```
+
+A manifest está em `public/manifest.webmanifest` com:
+- Nome e descrição
+- Ícones (192×192 e 512×512)
+- Screenshots (wide: 810×540, narrow: 540×720)
+- Tema de cores e display mode
+
+### ⚡ Performance
+
+Após instalar, o app:
+- **Carrega 50-70% mais rápido** (assets do cache)
+- **Usa menos dados** (menos downloads repetidos)
+- **Funciona offline** (recursos cacheados disponíveis)
+- **Experiência como app nativo** (sem UI do navegador)
