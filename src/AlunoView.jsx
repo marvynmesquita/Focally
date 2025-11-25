@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useWebRTC } from './useWebRTC';
 import SessionCodeInput from './components/SessionCodeInput';
 import { isFirebaseConfigured } from './firebase/config';
+import AudioVisualizerBackground from './components/AudioVisualizerBackground';
+import GlassCard from './components/GlassCard';
+import VolumeSlider from './components/VolumeSlider';
+import BinauralSelector from './components/BinauralSelector';
 
 function AlunoView() {
   const {
@@ -14,189 +18,220 @@ function AlunoView() {
     cleanup
   } = useWebRTC('aluno');
 
-  // MODIFICADO: Renomeado de audioRef para professorAudioRef
   const professorAudioRef = useRef(null);
-  
-  // NOVO: Ref para o player da onda sonora
   const soundWaveAudioRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const combinedStreamRef = useRef(null);
 
-  // NOVO: Estados para controle de volume e seleção de som
-  const [professorVolume, setProfessorVolume] = useState(1); // 1 = 100%
-  const [soundWaveVolume, setSoundWaveVolume] = useState(0.2); // 0.2 = 20%
-  const [selectedSound, setSelectedSound] = useState(''); // '' = Nenhuma
+  const [professorVolume, setProfessorVolume] = useState(1);
+  const [soundWaveVolume, setSoundWaveVolume] = useState(0.2);
+  const [selectedSound, setSelectedSound] = useState('');
+  const [combinedStream, setCombinedStream] = useState(null);
 
-  // Limpar recursos quando o componente for desmontado
   useEffect(() => {
     return () => {
       cleanup();
+      // NÃO fechar o audioContext aqui, pois ele é compartilhado
+      // e pode estar sendo usado pelo visualizador
     };
   }, [cleanup]);
 
-  // MODIFICADO: Atualiza o player de áudio do professor
   useEffect(() => {
     if (remoteStream && professorAudioRef.current) {
       professorAudioRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
-  // NOVO: useEffect para controlar o volume do professor
+  // Criar stream combinado para o visualizador
+  useEffect(() => {
+    if (!isConnected) {
+      setCombinedStream(null);
+      return;
+    }
+
+    try {
+      // Criar AudioContext se não existir
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      const audioContext = audioContextRef.current;
+      
+      // Resume o contexto se necessário
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      const destination = audioContext.createMediaStreamDestination();
+
+      // Conectar áudio do professor se disponível
+      if (remoteStream) {
+        try {
+          const professorSource = audioContext.createMediaStreamSource(remoteStream);
+          professorSource.connect(destination);
+        } catch (e) {
+          console.warn('Erro ao conectar stream do professor:', e);
+        }
+      }
+
+      // Conectar áudio da onda sonora se disponível
+      if (soundWaveAudioRef.current && selectedSound) {
+        try {
+          // Verificar se já não foi conectado antes
+          if (!soundWaveAudioRef.current._connectedToContext) {
+            const soundSource = audioContext.createMediaElementSource(soundWaveAudioRef.current);
+            soundSource.connect(destination);
+            soundSource.connect(audioContext.destination); // Manter áudio audível
+            soundWaveAudioRef.current._connectedToContext = true;
+            soundWaveAudioRef.current._audioSource = soundSource;
+          } else if (soundWaveAudioRef.current._audioSource) {
+            // Reconectar se já existe
+            soundWaveAudioRef.current._audioSource.connect(destination);
+          }
+        } catch (e) {
+          console.warn('Erro ao conectar onda sonora:', e);
+        }
+      }
+
+      setCombinedStream(destination.stream);
+      combinedStreamRef.current = destination.stream;
+    } catch (error) {
+      console.warn('Erro ao criar stream combinado:', error);
+      // Fallback para apenas remoteStream
+      setCombinedStream(remoteStream);
+    }
+  }, [isConnected, remoteStream, selectedSound]);
+
   useEffect(() => {
     if (professorAudioRef.current) {
       professorAudioRef.current.volume = professorVolume;
     }
   }, [professorVolume]);
 
-  // NOVO: useEffect para controlar o player da onda sonora (seleção e volume)
   useEffect(() => {
     if (soundWaveAudioRef.current) {
-      // Define o volume
       soundWaveAudioRef.current.volume = soundWaveVolume;
 
-      // Se uma onda sonora for selecionada
       if (selectedSound) {
         const soundFile = `/audio/${selectedSound}.mp3`;
-        // Evita recarregar se o src já for o mesmo (ex: apenas mudando o volume)
         if (soundWaveAudioRef.current.src.endsWith(soundFile)) {
-          soundWaveAudioRef.current.play().catch(e => console.warn("Autoplay da onda sonora bloqueado"));
+          soundWaveAudioRef.current.play().catch(e => console.warn("Reprodução automática bloqueada"));
         } else {
           soundWaveAudioRef.current.src = soundFile;
-          soundWaveAudioRef.current.play().catch(e => console.warn("Autoplay da onda sonora bloqueado"));
+          soundWaveAudioRef.current.play().catch(e => console.warn("Reprodução automática bloqueada"));
         }
       } else {
-        // Se "Nenhuma" for selecionada, pausa e limpa
         soundWaveAudioRef.current.pause();
         soundWaveAudioRef.current.src = '';
       }
     }
   }, [selectedSound, soundWaveVolume]);
 
-
-  const getStatusClass = () => {
-    if (error) return 'status-error';
-    if (isConnected) return 'status-connected';
-    if (sessionCode) return 'status-waiting';
-    return 'status-waiting';
-  };
+  const soundOptions = [
+    { value: 'white-noise', label: 'Ruído Branco' },
+    { value: 'pink-noise', label: 'Ruído Rosa' },
+    { value: 'brown-noise', label: 'Ruído Marrom' },
+    { value: 'beta-wave', label: 'Beta (Foco)' },
+    { value: 'theta-wave', label: 'Theta (Relaxamento)' },
+  ];
 
   return (
-    <div>
-      <h2>Modo: Aluno (Receptor)</h2>
+    <div className="relative w-full max-w-2xl mx-auto">
+      <AudioVisualizerBackground active={isConnected} audioStream={combinedStream} />
       
-      <div className={`status-indicator ${getStatusClass()}`}>
-        Status: {status}
-      </div>
-
-      {error && (
-        <div className="status-indicator status-error">
-          Erro: {error}
+      <GlassCard className="flex flex-col items-center">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold mb-2 text-white">Modo Aluno</h2>
         </div>
-      )}
 
-      {!isFirebaseConfigured && (
-        <div className="status-indicator status-error" style={{ marginBottom: '20px' }}>
-          <strong>⚠️ Firebase não configurado!</strong>
-          <p style={{ marginTop: '10px', fontSize: '14px' }}>
-            Por favor, configure o Firebase antes de usar o aplicativo.
-            <br />
-            Siga as instruções em <strong>FIREBASE_SETUP.md</strong> e edite <strong>src/firebase/config.js</strong>
-          </p>
+        <div className={`
+          mb-8 px-4 py-2 rounded-full text-sm font-medium border
+          ${error 
+            ? 'bg-red-500/10 border-red-500/30 text-red-200' 
+            : isConnected 
+              ? 'bg-green-500/10 border-green-500/30 text-green-200 animate-pulse' 
+              : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-200'}
+        `}>
+          {error ? `Error: ${error}` : `Status: ${status}`}
         </div>
-      )}
 
-      {!sessionCode ? (
-        <>
-          <div className="info-box">
-            <p><strong>Como usar:</strong></p>
-            <p>1. Digite o código de 6 dígitos recebido do professor ou escaneie o QR Code</p>
-            <p>2. Clique em "Conectar"</p>
-            <p>3. O áudio começará a tocar automaticamente quando a conexão for estabelecida</p>
+        {!isFirebaseConfigured && (
+          <div className="mb-8 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 text-center">
+            <strong>⚠️ Firebase não configurado!</strong>
+            <p className="text-sm mt-2">Por favor, configure o Firebase em src/firebase/config.js</p>
           </div>
+        )}
 
-          <SessionCodeInput 
-            onConnect={connectWithSessionCode}
-            disabled={!isFirebaseConfigured}
-          />
-        </>
-      ) : (
-        <>
-          <div className="info-box">
-            <p><strong>Código de sessão:</strong> {sessionCode}</p>
-            <p>Aguardando conexão com o professor...</p>
+        {!sessionCode ? (
+          <div className="w-full">
+            <div className="mb-8 text-center text-gray-300 space-y-2">
+              <p>1. Digite o código de 6 dígitos do seu professor</p>
+              <p>2. Clique em "Conectar" para entrar na sessão</p>
+              <p>3. O áudio iniciará automaticamente</p>
+            </div>
+
+            <SessionCodeInput 
+              onConnect={connectWithSessionCode}
+              disabled={!isFirebaseConfigured}
+            />
           </div>
+        ) : (
+          <div className="w-full animate-fade-in">
+            <div className="mb-8 text-center">
+              <p className="text-gray-400">Conectado à Sessão</p>
+              <p className="text-2xl font-mono font-bold text-neon-cyan tracking-widest">{sessionCode}</p>
+            </div>
 
-          {/* MODIFICADO: Esta seção agora contém os controles de áudio */}
-          {isConnected && (
-            <div className="audio-container">
-              <div className="info-box" style={{ background: '#d4edda', marginBottom: '20px' }}>
-                <p>✅ <strong>Conectado!</strong> Ajuste os volumes como preferir.</p>
-              </div>
-
-              {/* NOVO: Painel de Controle de Áudio */}
-              <div className="audio-controls">
-                <div className="control-group">
-                  <label htmlFor="prof-volume">🎙️ Volume do Professor</label>
-                  <input
-                    id="prof-volume"
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
+            {isConnected && (
+              <div className="space-y-8">
+                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                  <VolumeSlider 
                     value={professorVolume}
                     onChange={(e) => setProfessorVolume(Number(e.target.value))}
+                    label="Volume do Professor"
+                    icon="🎙️"
                   />
                 </div>
 
-                <div className="control-group">
-                  <label htmlFor="sound-select">🌊 Onda Sonora</label>
-                  <select
-                    id="sound-select"
-                    value={selectedSound}
-                    onChange={(e) => setSelectedSound(e.target.value)}
-                  >
-                    <option value="">Nenhuma</option>
-                    <option value="white-noise">Ruído Branco</option>
-                    <option value="pink-noise">Ruído Rosa</option>
-                    <option value="brown-noise">Ruído Marrom</option>
-                    <option value="beta-wave">Ondas Beta</option>
-                    <option value="theta-wave">Ondas Theta</option>
-                    {/* Adicione mais opções conforme os arquivos que você adicionou */}
-                  </select>
-                </div>
-                
-                <div className="control-group">
-                  <label htmlFor="sound-volume">🔊 Volume da Onda</label>
-                  <input
-                    id="sound-volume"
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
+                <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                  <div className="mb-4">
+                    <label className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-4">
+                      <span className="text-neon-cyan">🌊</span> Som de Fundo
+                    </label>
+                    <BinauralSelector 
+                      selected={selectedSound}
+                      onSelect={setSelectedSound}
+                      options={soundOptions}
+                    />
+                  </div>
+
+                  <VolumeSlider 
                     value={soundWaveVolume}
                     onChange={(e) => setSoundWaveVolume(Number(e.target.value))}
-                    disabled={!selectedSound} // Desabilita se nenhuma onda for selecionada
+                    label="Volume do Som"
+                    icon="🔊"
+                    disabled={!selectedSound}
                   />
                 </div>
+
+                <audio 
+                  ref={professorAudioRef}
+                  autoPlay
+                  playsInline
+                  className="hidden"
+                />
+
+                <audio
+                  ref={soundWaveAudioRef}
+                  loop
+                  playsInline
+                  className="hidden"
+                />
               </div>
-
-              {/* MODIFICADO: Player do professor agora não tem controles visíveis */}
-              <audio 
-                ref={professorAudioRef}
-                autoPlay
-                playsInline
-                style={{ display: 'none' }} // Oculto, pois controlamos via slider
-              />
-
-              {/* NOVO: Player da onda sonora, oculto e em loop */}
-              <audio
-                ref={soundWaveAudioRef}
-                loop
-                playsInline
-                style={{ display: 'none' }}
-              />
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </div>
+        )}
+      </GlassCard>
     </div>
   );
 }

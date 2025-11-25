@@ -342,6 +342,7 @@ export const useWebRTC = (mode) => {
     sessionCode,
     error,
     isConnected,
+    localStream: localStreamRef.current,
     remoteStream: remoteStreamRef.current,
     startTransmission,
     connectWithSessionCode,

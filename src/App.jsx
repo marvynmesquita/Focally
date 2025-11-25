@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import './index.css'
 import InstallPrompt from './components/InstallPrompt'
-import ViewRouter from './components/ViewRouter' // Importa o novo router
+import ViewRouter from './components/ViewRouter'
+import GlassCard from './components/GlassCard'
+import AudioVisualizerBackground from './components/AudioVisualizerBackground'
 
 function App () {
   const [mode, setMode] = useState(null)
-  // NOVO: Estado para pré-preencher o código
   const [prefilledCode, setPrefilledCode] = useState(null)
 
-  // NOVO: Efeito para ler a URL
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search)
@@ -20,8 +20,6 @@ function App () {
         if (urlCode && /^\d{6}$/.test(urlCode)) {
           setPrefilledCode(urlCode)
         }
-        // Limpa a URL para que o usuário possa recarregar a página sem
-        // ficar preso no modo aluno.
         window.history.replaceState(
           {},
           document.title,
@@ -31,40 +29,70 @@ function App () {
     } catch (e) {
       console.error('Erro ao ler parâmetros da URL:', e)
     }
-  }, []) // Executa apenas uma vez no carregamento
+  }, [])
 
   return (
-    <div className='app-container'>
+    <div className='min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden text-white font-sans'>
+      <AudioVisualizerBackground active={false} />
+      
       <InstallPrompt />
-      <img src='/image/logo.png' alt='Focally Logo' className='logo' />
+      
+      <div className="w-full max-w-4xl z-10">
+        {!mode ? (
+          <div className="flex flex-col items-center">
+            <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+              Focally
+            </h1>
+            <p className="text-gray-400 mb-12 text-lg tracking-wide">O Portal para o Foco Profundo</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
+              <GlassCard 
+                hoverEffect={true} 
+                onClick={() => setMode('professor')}
+                className="flex flex-col items-center text-center group"
+              >
+                <div className="w-16 h-16 mb-6 rounded-full bg-neon-cyan/10 flex items-center justify-center group-hover:bg-neon-cyan/20 transition-colors duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Professor</h2>
+                <p className="text-gray-400 text-sm">Transmita áudio e guie a sessão de foco.</p>
+              </GlassCard>
 
-      {!mode ? (
-        <div>
-          <div className='mode-selector'>
-            <button
-              className='mode-button'
-              onClick={() => setMode('professor')}
-            >
-              Sou Professor
-            </button>
-            <button className='mode-button' onClick={() => setMode('aluno')}>
-              Sou Aluno
-            </button>
+              <GlassCard 
+                hoverEffect={true} 
+                onClick={() => setMode('aluno')}
+                className="flex flex-col items-center text-center group"
+              >
+                <div className="w-16 h-16 mb-6 rounded-full bg-neon-magenta/10 flex items-center justify-center group-hover:bg-neon-magenta/20 transition-colors duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-neon-magenta" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Aluno</h2>
+                <p className="text-gray-400 text-sm">Conecte-se e entre na zona de foco.</p>
+              </GlassCard>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className='view-container'>
-          <button
-            className='button button-secondary'
-            onClick={() => setMode(null)}
-            style={{ marginBottom: '20px' }}
-          >
-            ← Voltar à Seleção
-          </button>
-          {/* A lógica de renderização agora é delegada ao ViewRouter */}
-          <ViewRouter mode={mode} prefilledCode={prefilledCode} />
-        </div>
-      )}
+        ) : (
+          <div className="w-full flex flex-col items-center">
+            <button
+              onClick={() => setMode(null)}
+              className="self-start mb-8 text-gray-400 hover:text-white flex items-center gap-2 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Voltar ao Início
+            </button>
+            
+            <div className="w-full">
+              <ViewRouter mode={mode} prefilledCode={prefilledCode} />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useWebRTC } from './useWebRTC';
 import QRCodeDisplay from './components/QRCodeDisplay';
 import { isFirebaseConfigured } from './firebase/config';
+import AudioVisualizerBackground from './components/AudioVisualizerBackground';
+import GlassCard from './components/GlassCard';
+import NeonButton from './components/NeonButton';
 
 function ProfessorView() {
   const {
@@ -9,30 +12,21 @@ function ProfessorView() {
     sessionCode,
     error,
     isConnected,
+    localStream,
     startTransmission,
     cleanup
   } = useWebRTC('professor');
 
-  // Limpar recursos quando o componente for desmontado
-  // Usar uma ref para evitar limpar durante re-renders do Strict Mode
   const cleanupRef = useRef(cleanup);
   cleanupRef.current = cleanup;
   
   useEffect(() => {
     return () => {
-      // Só limpar se realmente estiver desmontando (não durante re-renders)
       if (sessionCode || isConnected) {
         cleanupRef.current();
       }
     };
-  }, []); // Array vazio = só executa no mount/unmount real
-
-  const getStatusClass = () => {
-    if (error) return 'status-error';
-    if (isConnected) return 'status-transmitting';
-    if (sessionCode) return 'status-waiting';
-    return 'status-waiting';
-  };
+  }, []);
 
   const handleCopyCode = () => {
     if (sessionCode) {
@@ -41,81 +35,89 @@ function ProfessorView() {
     }
   };
 
-  // Debug: log do sessionCode
-  useEffect(() => {
-    console.log('ProfessorView - sessionCode:', sessionCode);
-    console.log('ProfessorView - status:', status);
-    console.log('ProfessorView - error:', error);
-  }, [sessionCode, status, error]);
-
   return (
-    <div>
-      <h2>Modo: Professor (Transmissor)</h2>
+    <div className="relative w-full max-w-2xl mx-auto">
+      <AudioVisualizerBackground active={isConnected} audioStream={localStream} />
       
-      <div className={`status-indicator ${getStatusClass()}`}>
-        Status: {status}
-      </div>
-
-      {error && (
-        <div className="status-indicator status-error">
-          Erro: {error}
+      <GlassCard className="flex flex-col items-center">
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold mb-2 text-white">Modo Professor</h2>
         </div>
-      )}
 
-      {!isFirebaseConfigured && (
-        <div className="status-indicator status-error" style={{ marginBottom: '20px' }}>
-          <strong>⚠️ Firebase não configurado!</strong>
-          <p style={{ marginTop: '10px', fontSize: '14px' }}>
-            Por favor, configure o Firebase antes de usar o aplicativo.
-            <br />
-            Siga as instruções em <strong>FIREBASE_SETUP.md</strong> e edite <strong>src/firebase/config.js</strong>
-          </p>
+        {/* Status Indicator */}
+        <div className={`
+          mb-8 px-4 py-2 rounded-full text-sm font-medium border
+          ${error 
+            ? 'bg-red-500/10 border-red-500/30 text-red-200' 
+            : isConnected 
+              ? 'bg-green-500/10 border-green-500/30 text-green-200 animate-pulse' 
+              : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-200'}
+        `}>
+          {error ? `Error: ${error}` : `Status: ${status}`}
         </div>
-      )}
 
-      {!sessionCode ? (
-        <>
-          <div className="info-box">
-            <p><strong>Como usar:</strong></p>
-            <p>1. Clique em "Iniciar Transmissão" e permita o acesso ao microfone</p>
-            <p>2. Um código de 6 dígitos será gerado automaticamente</p>
-            <p>3. Compartilhe o código ou QR Code com o aluno</p>
-            <p>4. A conexão será estabelecida automaticamente quando o aluno se conectar</p>
+        {!isFirebaseConfigured && (
+          <div className="mb-8 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 text-center">
+            <strong>⚠️ Firebase não configurado!</strong>
+            <p className="text-sm mt-2">Por favor, configure o Firebase em src/firebase/config.js</p>
           </div>
+        )}
 
-          <button 
-            className="button button-primary"
-            onClick={startTransmission}
-            disabled={!isFirebaseConfigured}
-          >
-            Iniciar Transmissão
-          </button>
-        </>
-      ) : (
-        <>
-          <div className="info-box">
-            <p><strong>✅ Sessão criada!</strong></p>
-            <p>Compartilhe o código abaixo ou o QR Code com o aluno. A conexão será estabelecida automaticamente.</p>
-          </div>
-
-          <QRCodeDisplay sessionCode={sessionCode} />
-
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <button 
-              onClick={handleCopyCode}
-              className="button button-secondary"
-            >
-              📋 Copiar Código
-            </button>
-          </div>
-
-          {isConnected && (
-            <div className="info-box" style={{ marginTop: '20px', background: '#d4edda' }}>
-              <p>✅ <strong>Transmissão ativa!</strong> O aluno está conectado e ouvindo seu áudio.</p>
+        {!sessionCode ? (
+          <div className="flex flex-col items-center w-full">
+            <div className="mb-8 text-center text-gray-300 space-y-2">
+              <p>1. Clique em "Iniciar Transmissão" para ativar o microfone</p>
+              <p>2. Compartilhe o código gerado com seu aluno</p>
+              <p>3. A conexão será estabelecida automaticamente</p>
             </div>
-          )}
-        </>
-      )}
+
+            <NeonButton 
+              onClick={startTransmission}
+              disabled={!isFirebaseConfigured}
+              className="w-full max-w-xs"
+            >
+              Iniciar Transmissão
+            </NeonButton>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center w-full animate-fade-in">
+            <div className="mb-8 text-center">
+              <p className="text-gray-400 mb-4">Código da Sessão</p>
+              <button 
+                onClick={handleCopyCode}
+                className="text-5xl font-mono font-bold text-neon-cyan tracking-widest hover:scale-105 transition-transform cursor-pointer"
+                title="Clique para copiar"
+              >
+                {sessionCode}
+              </button>
+            </div>
+
+            <div className="mb-8 p-4 bg-white/5 rounded-xl">
+              <QRCodeDisplay sessionCode={sessionCode} />
+            </div>
+
+            {isConnected && (
+              <div className="mb-8 text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-cyan opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-neon-cyan"></span>
+                  </span>
+                  Aluno Conectado e Ouvindo
+                </div>
+              </div>
+            )}
+            
+            <NeonButton 
+              variant="danger"
+              onClick={() => window.location.reload()}
+              className="mt-4"
+            >
+              Encerrar Sessão
+            </NeonButton>
+          </div>
+        )}
+      </GlassCard>
     </div>
   );
 }

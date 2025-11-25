@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { validateSessionCode } from '../utils/sessionCode';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import NeonButton from './NeonButton';
 
 /**
  * Componente para entrada de código de sessão com opção de escanear QR Code
@@ -9,12 +10,10 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
  * @param {string} initialCode - Código para pré-preencher o input
  */
 function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
-  // MODIFICADO: Usa initialCode para o estado inicial
   const [code, setCode] = useState(initialCode);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [error, setError] = useState('');
 
-  // Efeito para controlar o scanner de QR Code
   useEffect(() => {
     if (showQRScanner) {
       const scannerRegionId = "qr-reader";
@@ -31,10 +30,8 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
       const onScanSuccess = (decodedText, decodedResult) => {
         setError('');
         
-        // NOVO: Validação flexível (pode ser a URL ou só o código)
         let sessionCode = decodedText;
 
-        // Tenta extrair o código da URL, se for uma URL
         if (decodedText.includes('?code=')) {
           try {
             const url = new URL(decodedText);
@@ -43,7 +40,7 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
               sessionCode = codeFromUrl;
             }
           } catch (e) {
-            // Ignora, trata como texto plano
+            // Ignora
           }
         }
         
@@ -88,114 +85,74 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
     setError('');
   };
 
-  // ... (Renderização) ...
-  // O restante do arquivo (lógica de renderização) pode permanecer o mesmo.
-  // Apenas o <input> principal será pré-preenchido pelo useState.
-  // ... (return <div> ... <form> ... <input value={code} ... /> ... </form> ... </div>)
   if (showQRScanner) {
     return (
-      <div style={{ 
-        marginTop: '20px', 
-        padding: '15px', 
-        background: '#f8f9fa', 
-        borderRadius: '8px',
-        border: '1px solid #ddd'
-      }}>
-        <div id="qr-reader" style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }}></div>
+      <div className="mt-5 p-4 bg-white/5 rounded-xl border border-white/10">
+        <div id="qr-reader" className="w-full max-w-[500px] mx-auto overflow-hidden rounded-lg"></div>
         
         {error && (
-          <div style={{ 
-            color: '#dc3545', 
-            marginTop: '8px', 
-            fontSize: '14px',
-            textAlign: 'center' 
-          }}>
+          <div className="text-red-400 mt-2 text-sm text-center">
             {error}
           </div>
         )}
 
-        <button
-          type="button"
-          className="button button-secondary"
+        <NeonButton
+          variant="secondary"
           onClick={() => {
             setShowQRScanner(false);
             setError('');
           }}
-          style={{ width: '100%', marginTop: '15px' }}
+          className="w-full mt-4"
         >
           Cancelar Leitura
-        </button>
+        </NeonButton>
       </div>
     );
   }
 
   return (
     <div>
-      <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }} className='connection-form'>
-        <label>
-          Digite o código de sessão (6 dígitos):
+      <form onSubmit={handleSubmit} className="mb-6">
+        <label className="block mb-2 font-medium text-gray-300">
+          Digite o Código da Sessão (6 dígitos):
         </label>
-        <div>
+        <div className="flex flex-col gap-4">
           <input
             type="text"
-            value={code} // O valor será o 'initialCode' no primeiro render
+            value={code}
             onChange={handleCodeChange}
             placeholder="000000"
             maxLength={6}
             disabled={disabled}
-            style={{
-              flex: 1,
-              padding: '12px',
-              fontSize: '24px',
-              textAlign: 'center',
-              letterSpacing: '4px',
-              fontFamily: 'monospace',
-              border: '2px solid #ddd',
-              borderRadius: '8px',
-              fontWeight: 'bold'
-            }}
+            className="w-full p-3 text-2xl text-center tracking-[0.5em] font-mono bg-white/5 border-2 border-white/10 rounded-xl text-white focus:outline-none focus:border-neon-cyan transition-colors placeholder-white/10"
           />
-          <button
+          <NeonButton
             type="submit"
-            className="button button-primary"
             disabled={disabled || code.length !== 6}
+            className="w-full"
           >
             Conectar
-          </button>
+          </NeonButton>
         </div>
         {error && (
-          <div style={{ 
-            color: '#dc3545', 
-            marginTop: '8px', 
-            fontSize: '14px' 
-          }}>
+          <div className="text-red-400 mt-2 text-sm text-center">
             {error}
           </div>
         )}
       </form>
 
-      <div style={{ 
-        marginTop: '20px', 
-        padding: '15px', 
-        background: '#e7f3ff', 
-        borderRadius: '8px',
-        border: '1px solid #2196F3'
-      }}>
-        <p style={{ 
-          marginBottom: '10px', 
-          color: '#1976D2', 
-          fontWeight: '600' 
-        }}>
+      <div className="mt-6 p-4 bg-neon-cyan/5 rounded-xl border border-neon-cyan/20 text-center">
+        <p className="mb-3 text-neon-cyan font-medium">
           Alternativa: Escanear QR Code
         </p>
-        <button
-          type="button"
-          className="button button-secondary"
+        <NeonButton
+          variant="secondary"
           onClick={() => setShowQRScanner(true)}
           disabled={disabled}
+          className="w-full text-sm"
         >
           📷 Escanear QR Code
-        </button>
+        </NeonButton>
       </div>
     </div>
   );

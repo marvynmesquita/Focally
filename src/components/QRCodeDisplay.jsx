@@ -21,17 +21,6 @@ function QRCodeDisplay({ sessionCode }) {
       background: '#f8f9fa',
       borderRadius: '8px'
     }}>
-      <h3 style={{ marginBottom: '15px', color: '#333' }}>Código de Sessão</h3>
-      <div style={{
-        fontSize: '48px',
-        fontWeight: 'bold',
-        letterSpacing: '8px',
-        color: '#667eea',
-        marginBottom: '20px',
-        fontFamily: 'monospace'
-      }}>
-        {sessionCode}
-      </div>
       <div style={{ 
         padding: '20px', 
         background: 'white', 
@@ -45,14 +34,6 @@ function QRCodeDisplay({ sessionCode }) {
           includeMargin={true}
         />
       </div>
-      <p style={{ 
-        marginTop: '15px', 
-        fontSize: '14px', 
-        color: '#666',
-        textAlign: 'center'
-      }}>
-        Escaneie o QR Code ou digite o código acima
-      </p>
     </div>
   );
 }

@@ -1,330 +1,93 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import "tailwindcss";
+
+@theme {
+  --color-deepSpace-start: #1a0b2e;
+  --color-deepSpace-end: #0f172a;
+  --color-neon-cyan: #00f2ff;
+  --color-neon-magenta: #ff00ff;
+  --color-surface-glass: rgba(255, 255, 255, 0.1);
+  --color-surface-glassBorder: rgba(255, 255, 255, 0.2);
+
+  --font-sans: 'Inter', 'DM Sans', sans-serif;
+
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+  
+  --animate-blob: blob 7s infinite;
+  --animate-delay-2000: 2s;
+  --animate-delay-4000: 4s;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+:root {
+  /* Legacy variables if needed, but @theme handles the utilities */
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* Define a altura mínima como 100% da tela */
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background: linear-gradient(135deg, var(--color-deepSpace-start), var(--color-deepSpace-end));
+  color: white;
   min-height: 100vh;
-  
-  /* O gradiente com suas 10 cores */
-  background: linear-gradient(
-    45deg, /* O ângulo do gradiente (mude para 90deg, 180deg, etc.) */
-    #f3f0f1,
-    #e3eaf4,
-    #98b9e1,
-    #7ba8db,
-    #4e85d1,
-    #8b8ac5,
-    #d39d88,
-    #f1ae72,
-    #fbdfc1,
-    #fae3ce
-  );
-
-  /* Faz o fundo ficar "fixo" ao rolar a página. Fica mais suave. */
-  background-attachment: fixed;
-  
-  /* Garante que o gradiente não se repita */
-  background-repeat: no-repeat;
-  
-  /* Garante que o gradiente cubra toda a área */
-  background-size: cover;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-#root {
-  width: 100%;
-  max-width: 800px;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
 }
 
-.app-container {
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  background-color: rgba(17, 25, 40, 0.75);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.125);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
-  color: white;
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 20px auto;
-  max-width: 300px;
-}
-
-h1 {
-  color: #333;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-.subtitle {
-  color: #666;
-  text-align: center;
-  margin-bottom: 30px;
-  font-size: 14px;
-}
-
-.mode-selector {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
-  justify-content: center;
-  @media(max-width: 600px) {
-    flex-direction: column;
-    align-items: center;
-  }
-}
-
-.view-container {
-  margin-top: 30px;
-}
-
-.status-indicator {
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.status-waiting {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffc107;
-}
-
-.status-transmitting {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #28a745;
-}
-
-.status-connected {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #28a745;
-}
-
-.status-error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #dc3545;
-}
-
-.button {
-  padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 10px 5px;
-}
-
-.button-primary {
-  background: #667eea;
-  color: white;
-}
-
-.button-primary:hover {
-  background: #5568d3;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.button-primary:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.button-secondary {
-  background: #6c757d;
-  color: white;
-}
-
-.button-secondary:hover {
-  background: #5a6268;
-}
-
-.textarea-container {
-  margin: 20px 0;
-}
-
-.textarea-container label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #333;
-}
-
-textarea {
-  width: 100%;
-  min-height: 120px;
-  padding: 12px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  resize: vertical;
-}
-
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.audio-container {
-  margin: 20px 0;
-}
-
-audio {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.info-box {
-  background: #e7f3ff;
-  border-left: 4px solid #2196F3;
-  padding: 15px;
-  margin: 20px 0;
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 }
 
-.info-box p {
-  margin: 5px 0;
-  color: #1976D2;
-  font-size: 14px;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.audio-controls {
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+/* Glassmorphism Utilities */
+.glass-panel {
+  @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-xl;
 }
 
-.control-group {
-  display: flex;
-  flex-direction: column;
+.glass-button {
+  @apply bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 backdrop-blur-sm;
 }
 
-.control-group label {
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
+/* Range Slider Styling */
+input[type=range] {
+  @apply w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer;
 }
 
-.control-group input[type="range"] {
-  width: 100%;
-  cursor: pointer;
+input[type=range]::-webkit-slider-thumb {
+  @apply appearance-none w-4 h-4 rounded-full bg-neon-cyan shadow-[0_0_10px_rgba(0,242,255,0.5)] transition-transform duration-200;
 }
 
-.control-group select {
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-}
-
-.view-container h2 {
-  margin-bottom: 15px;
-}
-
-.connection-form label {
-  font-weight: 600;
-  margin-bottom: 8px;
-  display: block;
-  color: white;
-}
-
-.connection-form div {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-}
-
-/* --- Estilos do Botão --- */
-.mode-button {
-  position: relative; /* Essencial para o ::before */
-  z-index: 1;
-
-  /* Estilos visuais */
-  padding: 18px 36px;
-  font-size: 1.3rem;
-  font-weight: bold;
-  font-family: Arial, sans-serif;
-  color: #fae3ce;
-  backdrop-filter: blur(15px) saturate(180%);
-  -webkit-backdrop-filter: blur(15px) saturate(180%);
-  background-color: rgba(17, 25, 40, 0.85);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.125);
-  cursor: pointer;
-}
-.mode-button:hover {
-  backdrop-filter: blur(15px) saturate(180%);
-  -webkit-backdrop-filter: blur(15px) saturate(180%);
-  background-color: rgba(255, 255, 255, 0.85);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.125);
-  color: #333;
-}
-
-/* --- O Pseudo-elemento (O Brilho) --- */
-.mode-button::before {
-  content: '';
-  position: absolute;
-  /* Posicionado um pouco para fora para criar a borda/sombra */
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-
-  z-index: -1; /* Fica atrás do botão */
-  border-radius: 10px; /* Deve ser igual ao botão */
-
-  /* O gradiente com suas 10 cores */
-  background: linear-gradient(
-    45deg,
-    #f3f0f1, #e3eaf4, #98b9e1, #7ba8db, #4e85d1, 
-    #8b8ac5, #d39d88, #f1ae72, #fbdfc1, #fae3ce
-  );
-  
-  /* O truque mágico: transforma o fundo sólido em um brilho */
-  filter: blur(20px);
-  
-  /* Estado inicial: escondido */
-  opacity: 0;
-  transform: scale(0.95);
-  
-  /* Transição para aparecer suavemente */
-  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-}
-
-/* --- Animação no Hover --- */
-.mode-button:hover::before {
-  opacity: 1;
-  transform: scale(1); /* Faz o brilho "crescer" para a posição final */
+input[type=range]::-webkit-slider-thumb:hover {
+  @apply scale-125;
 }
