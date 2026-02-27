@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import './index.css'
 import InstallPrompt from './components/InstallPrompt'
 import ViewRouter from './components/ViewRouter'
+import ErrorBoundary from './components/ErrorBoundary'
 import GlassCard from './components/GlassCard'
 import AudioVisualizerBackground from './components/AudioVisualizerBackground'
 
-function App () {
+function App() {
   const [mode, setMode] = useState(null)
   const [prefilledCode, setPrefilledCode] = useState(null)
 
@@ -34,9 +35,9 @@ function App () {
   return (
     <div className='min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden text-white font-sans'>
       <AudioVisualizerBackground active={false} />
-      
+
       <InstallPrompt />
-      
+
       <div className="w-full max-w-4xl z-10">
         {!mode ? (
           <div className="flex flex-col items-center">
@@ -44,10 +45,10 @@ function App () {
               Focally
             </h1>
             <p className="text-gray-400 mb-12 text-lg tracking-wide">O Portal para o Foco Profundo</p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
-              <GlassCard 
-                hoverEffect={true} 
+              <GlassCard
+                hoverEffect={true}
                 onClick={() => setMode('professor')}
                 className="flex flex-col items-center text-center group"
               >
@@ -60,8 +61,8 @@ function App () {
                 <p className="text-gray-400 text-sm">Transmita áudio e guie a sessão de foco.</p>
               </GlassCard>
 
-              <GlassCard 
-                hoverEffect={true} 
+              <GlassCard
+                hoverEffect={true}
                 onClick={() => setMode('aluno')}
                 className="flex flex-col items-center text-center group"
               >
@@ -86,9 +87,11 @@ function App () {
               </svg>
               Voltar ao Início
             </button>
-            
+
             <div className="w-full">
-              <ViewRouter mode={mode} prefilledCode={prefilledCode} />
+              <ErrorBoundary>
+                <ViewRouter mode={mode} prefilledCode={prefilledCode} />
+              </ErrorBoundary>
             </div>
           </div>
         )}

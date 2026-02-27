@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useWebRTC } from './useWebRTC';
+import { useStudentConnection } from './features/student/hooks/useStudentConnection';
 import SessionCodeInput from './components/SessionCodeInput';
 import { isFirebaseConfigured } from './firebase/config';
 import AudioVisualizerBackground from './components/AudioVisualizerBackground';
 import GlassCard from './components/GlassCard';
 import VolumeSlider from './components/VolumeSlider';
 import BinauralSelector from './components/BinauralSelector';
+import { audioContextManager } from './core/audio/AudioContextManager';
 
 function AlunoView() {
   const {
@@ -16,11 +17,10 @@ function AlunoView() {
     remoteStream,
     connectWithSessionCode,
     cleanup
-  } = useWebRTC('aluno');
+  } = useStudentConnection();
 
   const professorAudioRef = useRef(null);
   const soundWaveAudioRef = useRef(null);
-  const audioContextRef = useRef(null);
   const combinedStreamRef = useRef(null);
 
   const [professorVolume, setProfessorVolume] = useState(1);
@@ -31,8 +31,7 @@ function AlunoView() {
   useEffect(() => {
     return () => {
       cleanup();
-      // NÃO fechar o audioContext aqui, pois ele é compartilhado
-      // e pode estar sendo usado pelo visualizador
+      // AudioContext centralizado cuida da sua própria vida útil
     };
   }, [cleanup]);
 
@@ -50,17 +49,7 @@ function AlunoView() {
     }
 
     try {
-      // Criar AudioContext se não existir
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      }
-
-      const audioContext = audioContextRef.current;
-      
-      // Resume o contexto se necessário
-      if (audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
+      const audioContext = audioContextManager.getAudioContext();
 
       const destination = audioContext.createMediaStreamDestination();
 
@@ -138,7 +127,7 @@ function AlunoView() {
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       <AudioVisualizerBackground active={isConnected} audioStream={combinedStream} />
-      
+
       <GlassCard className="flex flex-col items-center">
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-bold mb-2 text-white">Modo Aluno</h2>
@@ -146,10 +135,10 @@ function AlunoView() {
 
         <div className={`
           mb-8 px-4 py-2 rounded-full text-sm font-medium border
-          ${error 
-            ? 'bg-red-500/10 border-red-500/30 text-red-200' 
-            : isConnected 
-              ? 'bg-green-500/10 border-green-500/30 text-green-200 animate-pulse' 
+          ${error
+            ? 'bg-red-500/10 border-red-500/30 text-red-200'
+            : isConnected
+              ? 'bg-green-500/10 border-green-500/30 text-green-200 animate-pulse'
               : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-200'}
         `}>
           {error ? `Error: ${error}` : `Status: ${status}`}
@@ -170,7 +159,7 @@ function AlunoView() {
               <p>3. O áudio iniciará automaticamente</p>
             </div>
 
-            <SessionCodeInput 
+            <SessionCodeInput
               onConnect={connectWithSessionCode}
               disabled={!isFirebaseConfigured}
             />
@@ -185,7 +174,7 @@ function AlunoView() {
             {isConnected && (
               <div className="space-y-8">
                 <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                  <VolumeSlider 
+                  <VolumeSlider
                     value={professorVolume}
                     onChange={(e) => setProfessorVolume(Number(e.target.value))}
                     label="Volume do Professor"
@@ -198,14 +187,14 @@ function AlunoView() {
                     <label className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-4">
                       <span className="text-neon-cyan">🌊</span> Som de Fundo
                     </label>
-                    <BinauralSelector 
+                    <BinauralSelector
                       selected={selectedSound}
                       onSelect={setSelectedSound}
                       options={soundOptions}
                     />
                   </div>
 
-                  <VolumeSlider 
+                  <VolumeSlider
                     value={soundWaveVolume}
                     onChange={(e) => setSoundWaveVolume(Number(e.target.value))}
                     label="Volume do Som"
@@ -214,7 +203,7 @@ function AlunoView() {
                   />
                 </div>
 
-                <audio 
+                <audio
                   ref={professorAudioRef}
                   autoPlay
                   playsInline

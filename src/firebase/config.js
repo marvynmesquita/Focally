@@ -11,21 +11,21 @@ import { getDatabase } from 'firebase/database';
 // 5. IMPORTANTE: Crie um Realtime Database no modo de teste
 
 const firebaseConfig = {
-  apiKey: "AIzaSyClJdbX_5_gCaKOWs-zkaeI2mERGr6jL3o",
-  authDomain: "focally-e73d9.firebaseapp.com",
-  databaseURL: "https://focally-e73d9-default-rtdb.firebaseio.com/",
-  projectId: "focally-e73d9",
-  storageBucket: "focally-e73d9.firebasestorage.app",
-  messagingSenderId: "594970741901",
-  appId: "1:594970741901:web:0ee2815f17c0514307a6c4",
-  measurementId: "G-M3P3SST5YG"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Verificar se as configurações foram preenchidas
 const isConfigValid = 
-  firebaseConfig.apiKey !== "YOUR_API_KEY" &&
-  firebaseConfig.projectId !== "YOUR_PROJECT_ID" &&
-  firebaseConfig.databaseURL !== "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/";
+  firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.apiKey !== "your_api_key_here" &&
+  firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_PROJECT_ID" && firebaseConfig.projectId !== "your_project_id" &&
+  firebaseConfig.databaseURL && firebaseConfig.databaseURL !== "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/";
 
 if (!isConfigValid) {
   console.error(`

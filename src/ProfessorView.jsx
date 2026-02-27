@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useWebRTC } from './useWebRTC';
+import { useTeacherBroadcast } from './features/teacher/hooks/useTeacherBroadcast';
 import QRCodeDisplay from './components/QRCodeDisplay';
 import { isFirebaseConfigured } from './firebase/config';
 import AudioVisualizerBackground from './components/AudioVisualizerBackground';
@@ -15,11 +15,11 @@ function ProfessorView() {
     localStream,
     startTransmission,
     cleanup
-  } = useWebRTC('professor');
+  } = useTeacherBroadcast();
 
   const cleanupRef = useRef(cleanup);
   cleanupRef.current = cleanup;
-  
+
   useEffect(() => {
     return () => {
       if (sessionCode || isConnected) {
@@ -38,7 +38,7 @@ function ProfessorView() {
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       <AudioVisualizerBackground active={isConnected} audioStream={localStream} />
-      
+
       <GlassCard className="flex flex-col items-center">
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-bold mb-2 text-white">Modo Professor</h2>
@@ -47,10 +47,10 @@ function ProfessorView() {
         {/* Status Indicator */}
         <div className={`
           mb-8 px-4 py-2 rounded-full text-sm font-medium border
-          ${error 
-            ? 'bg-red-500/10 border-red-500/30 text-red-200' 
-            : isConnected 
-              ? 'bg-green-500/10 border-green-500/30 text-green-200 animate-pulse' 
+          ${error
+            ? 'bg-red-500/10 border-red-500/30 text-red-200'
+            : isConnected
+              ? 'bg-green-500/10 border-green-500/30 text-green-200 animate-pulse'
               : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-200'}
         `}>
           {error ? `Error: ${error}` : `Status: ${status}`}
@@ -71,7 +71,7 @@ function ProfessorView() {
               <p>3. A conexão será estabelecida automaticamente</p>
             </div>
 
-            <NeonButton 
+            <NeonButton
               onClick={startTransmission}
               disabled={!isFirebaseConfigured}
               className="w-full max-w-xs"
@@ -83,7 +83,7 @@ function ProfessorView() {
           <div className="flex flex-col items-center w-full animate-fade-in">
             <div className="mb-8 text-center">
               <p className="text-gray-400 mb-4">Código da Sessão</p>
-              <button 
+              <button
                 onClick={handleCopyCode}
                 className="text-5xl font-mono font-bold text-neon-cyan tracking-widest hover:scale-105 transition-transform cursor-pointer"
                 title="Clique para copiar"
@@ -107,8 +107,8 @@ function ProfessorView() {
                 </div>
               </div>
             )}
-            
-            <NeonButton 
+
+            <NeonButton
               variant="danger"
               onClick={() => window.location.reload()}
               className="mt-4"
