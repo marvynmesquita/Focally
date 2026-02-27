@@ -352,17 +352,36 @@ const [error, setError] = useState('');
 
 ## Hooks Personalizados
 
-### `useWebRTC(mode)`
+## Hooks Personalizados & Serviços Core
 
-**Responsabilidade**: Gerencia toda a lógica de conexão WebRTC, sinalização e streams.
+A antiga arquitetura monolítica `useWebRTC.js` foi dividida em Serviços Core abstratos e Hooks de domínios específicos para melhor separação de responsabilidades (SOLID).
 
-**Importação**:
-```javascript
-import { useWebRTC } from './useWebRTC';
-```
+### `useTeacherBroadcast()`
+
+**Responsabilidade**: Gerencia a lógica do professor (captura de áudio, criação da sessão e broadcast via WebRTC). Arquivo localizado em `src/features/teacher/hooks/useTeacherBroadcast.js`
 
 **Uso**:
 ```javascript
+import { useTeacherBroadcast } from '../../features/teacher/hooks/useTeacherBroadcast';
+
+const {
+  status,
+  sessionCode,
+  error,
+  isConnected,
+  startTransmission,
+  cleanup
+} = useTeacherBroadcast();
+```
+
+### `useStudentConnection()`
+
+**Responsabilidade**: Gerencia a lógica do Aluno (conectar numa sessão já vigente e receber a trilha P2P pelo WebRTC). Arquivo localizado em `src/features/student/hooks/useStudentConnection.js`
+
+**Uso**:
+```javascript
+import { useStudentConnection } from '../../features/student/hooks/useStudentConnection';
+
 const {
   status,
   sessionCode,
@@ -370,15 +389,9 @@ const {
   isConnected,
   remoteStream,
   connectWithSessionCode,
-  startTransmission,
   cleanup
-} = useWebRTC('professor' | 'aluno');
+} = useStudentConnection();
 ```
-
-**Parâmetro**:
-- `mode: string` - `'professor'` ou `'aluno'`
-
-**Retorno**:
 
 | Propriedade | Tipo | Descrição |
 |-----------|------|-----------|
@@ -386,85 +399,17 @@ const {
 | `sessionCode` | String | Código de sessão de 6 dígitos |
 | `error` | String\|null | Mensagem de erro (se houver) |
 | `isConnected` | Boolean | True se P2P conectado |
-| `remoteStream` | MediaStream\|null | Stream de áudio remoto (aluno only) |
-| `connectWithSessionCode(code)` | Function | Conecta com código (aluno only) |
-| `startTransmission()` | Function | Inicia captura de microfone (professor only) |
-| `cleanup()` | Function | Limpa recursos (streams, conexões, listeners) |
+| `remoteStream` | MediaStream\|null | Stream de áudio remoto (Aluno only) |
+| `connectWithSessionCode(code)` | Function | Conecta com código (Aluno only) |
+| `startTransmission()` | Function | Inicia captura de microfone (Professor only) |
+| `cleanup()` | Function | Limpa recursos associados àquela instância de contexto |
 
-**Funcionamento Interno**:
+**Funcionamento Base do Core**:
 
-#### Para Professor:
-```
-1. startTransmission() chamado
-   ├─ getUserMedia() solicita acesso ao microfone
-   ├─ Captura stream de áudio
-   ├─ Cria sessionCode randomizado
-   ├─ Salva em localStorage
-   ├─ createSession() no Firebase
-   └─ Aguarda offers de alunos
-
-2. Quando aluno envia offer (via Firebase)
-   ├─ Cria RTCPeerConnection para cada aluno
-   ├─ Adiciona track de áudio à conexão
-   ├─ setRemoteDescription(offer)
-   ├─ createAnswer()
-   └─ sendAnswer() no Firebase
-
-3. Aguarda candidates (ICE)
-   ├─ Recebe candidate do aluno
-   └─ addIceCandidate(candidate)
-
-4. Quando ICE conectado
-   ├─ Status: "Transmitindo"
-   ├─ isConnected: true
-   └─ Transmite áudio continuamente
-```
-
-#### Para Aluno:
-```
-1. connectWithSessionCode(code) chamado
-   ├─ Valida código (6 dígitos)
-   ├─ Cria RTCPeerConnection
-   ├─ listenForOffers() no Firebase
-   └─ Aguarda offer do professor
-
-2. Quando offer recebido (via Firebase)
-   ├─ setRemoteDescription(offer)
-   ├─ createAnswer()
-   ├─ sendAnswer() no Firebase
-   └─ listenForAnswerCandidates()
-
-3. Recebe candidates e ontrack
-   ├─ ontrack: recebe stream de áudio
-   ├─ remoteStream atualizado
-   ├─ Status: "Conectado"
-   └─ isConnected: true
-
-4. áudio reproduzido via <audio srcObject={remoteStream} />
-```
-
-**Configuração RTC**:
-```javascript
-const rtcConfig = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },      // Google STUN
-    { urls: 'stun:stun1.l.google.com:19302' },     // Google STUN
-    { urls: 'stun:stun.relay.metered.ca:80' },     // Metered STUN
-    // Múltiplos servidores TURN para NAT/Firewall
-    { urls: "turn:...", username: "...", credential: "..." },
-    // ...
-  ]
-}
-```
-
-**Storage**:
-- Professor: `localStorage.getItem('focally_session_code')` - reutiliza código se recarregar
-- Aluno: Não usa localStorage (sempre começa novo)
-
-**Limpeza**:
-- `cleanup()` deve ser chamada no `useEffect` de desmontagem
-- Para professor: para stream, fecha conexões P2P, deleta dados no Firebase
-- Para aluno: para stream, fecha conexão P2P, desinscreve listeners
+Ao invés dos hooks criarem e destruírem a `RTCPeerConnection` manualmente, todos os recursos custosos de máquina são terceirizados:
+- **`WebRTCService`**: Contém a classe Singleton para abstrair o manuseio das Conexões WebRTC e lidar as trocas assíncronas de descritores de sessões e candidatos de ICE via camada NAT.
+- **`AudioContextManager`**: Padrão Singleton usado em `AlunoView.jsx` que reaproveita o contexto de som do browser (e buffer size) de forma genérica para evitar sobreposições que ocorriam caso a aba permanecesse aberta num reset de estado do React.
+- **`FirebaseSignalingService`**: Injeta as dependências puras da SDK e do database através das variáveis em `.env` que por sua vez obedecem os métodos da interface genérica `ISignalingService`.
 
 ---
 

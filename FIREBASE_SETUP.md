@@ -28,19 +28,17 @@ O Focally usa Firebase Realtime Database para comunicação em tempo real entre 
 
 ### 4. Configurar no Projeto
 
-1. Abra o arquivo `src/firebase/config.js`
+1. Crie um arquivo `.env` na raiz do projeto baseado no `.env.example`
 2. Substitua os valores `YOUR_*` pelas credenciais copiadas:
 
-```javascript
-const firebaseConfig = {
-  apiKey: "SUA_API_KEY_AQUI",
-  authDomain: "SEU_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://SEU_PROJECT_ID-default-rtdb.firebaseio.com/",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_PROJECT_ID.appspot.com",
-  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-  appId: "SEU_APP_ID"
-};
+```env
+VITE_FIREBASE_API_KEY="SUA_API_KEY_AQUI"
+VITE_FIREBASE_AUTH_DOMAIN="SEU_PROJECT_ID.firebaseapp.com"
+VITE_FIREBASE_DATABASE_URL="https://SEU_PROJECT_ID-default-rtdb.firebaseio.com/"
+VITE_FIREBASE_PROJECT_ID="SEU_PROJECT_ID"
+VITE_FIREBASE_STORAGE_BUCKET="SEU_PROJECT_ID.appspot.com"
+VITE_FIREBASE_MESSAGING_SENDER_ID="SEU_MESSAGING_SENDER_ID"
+VITE_FIREBASE_APP_ID="SEU_APP_ID"
 ```
 
 ### 5. Configurar Regras de Segurança (Produção)
@@ -87,7 +85,7 @@ sessions/
 ## Troubleshooting
 
 ### Erro: "Firebase: Error (auth/unauthorized)"
-- Verifique se as credenciais estão corretas no `config.js`
+- Verifique se as variáveis de ambiente (`.env`) estão preenchidas e com os nomes corretos com prefixo `VITE_`
 - Certifique-se de que o Realtime Database está criado
 
 ### Erro: "Permission denied"

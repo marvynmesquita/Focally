@@ -25,7 +25,7 @@ npm install
 
 2. **Configure o Firebase** (obrigatório):
    - Siga as instruções em [FIREBASE_SETUP.md](./FIREBASE_SETUP.md)
-   - Configure as credenciais em `src/firebase/config.js`
+   - Configure as credenciais criando um arquivo `.env` na raiz (baseado no `.env.example`)
 
 3. Inicie o servidor de desenvolvimento:
 ```bash
@@ -70,13 +70,19 @@ Focally/
 │   ├── App.jsx                    # Componente principal com seletor de modo
 │   ├── ProfessorView.jsx          # Interface do professor (transmissor)
 │   ├── AlunoView.jsx              # Interface do aluno (receptor)
-│   ├── useWebRTC.js               # Hook personalizado para lógica WebRTC
+│   ├── core/                      # Lógica arquitetural centralizada
+│   │   ├── webrtc/WebRTCService.js
+│   │   ├── audio/AudioContextManager.js
+│   │   └── signaling/FirebaseSignalingService.js
+│   ├── features/                  # Lógica específica de domínio
+│   │   ├── student/hooks/useStudentConnection.js
+│   │   └── teacher/hooks/useTeacherBroadcast.js
 │   ├── firebase/
-│   │   ├── config.js              # Configuração do Firebase
-│   │   └── signaling.js           # Funções de sinalização
+│   │   └── config.js              # Inicialização do Firebase (usando envs)
 │   ├── components/
 │   │   ├── QRCodeDisplay.jsx      # Componente para exibir QR Code
 │   │   ├── SessionCodeInput.jsx   # Input de código de sessão
+│   │   ├── ErrorBoundary.jsx      # Captura de erros da UI 
 │   │   └── InstallPrompt.jsx      # Banner de instalação PWA
 │   ├── utils/
 │   │   └── sessionCode.js         # Utilitários para código de sessão
@@ -134,7 +140,7 @@ Para entender em detalhes a arquitetura, componentes e fluxos de dados do aplica
 | **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)** | Setup passo-a-passo do Firebase Realtime Database (obrigatório) |
 | **[DEPLOY.md](./DEPLOY.md)** | Instruções para deploy em produção |
 
-## �🔧 Funcionalidades do MVP
+## 🔧 Funcionalidades do MVP
 
 - ✅ Seleção de modo (Professor/Aluno)
 - ✅ Captura de áudio do microfone
@@ -142,6 +148,8 @@ Para entender em detalhes a arquitetura, componentes e fluxos de dados do aplica
 - ✅ **Código de sessão de 6 dígitos** para conexão fácil
 - ✅ **QR Code** para compartilhamento rápido
 - ✅ **Sinalização automática** via Firebase Realtime Database
+- ✅ Testes unitários com Vitest
+- ✅ CI/CD com Github Actions
 - ✅ Indicadores de status em tempo real
 - ✅ Tratamento de erros básico
 - ✅ Interface responsiva e intuitiva

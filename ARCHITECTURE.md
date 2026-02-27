@@ -20,10 +20,10 @@ Guia visual da arquitetura, fluxos de dados e componentes do Focally.
               (Transmissor)   (Receptor)
                     │             │
                     └──────┬──────┘
-                           │
-                    useWebRTC Hook
+                            │
+              useTeacher / useStudent Hooks
                 (Gerencia WebRTC + Firebase)
-                           │
+                            │
                 ┌──────────┼──────────┐
                 │          │          │
             RTCPeerC    Firebase    MediaStream
@@ -51,7 +51,8 @@ Guia visual da arquitetura, fluxos de dados e componentes do Focally.
 │                    CAMADA DE LÓGICA                        │
 │                                                             │
 │  Hooks e Utilitários:                                     │
-│  ├─ useWebRTC.js (Gerenciamento WebRTC)                  │
+│  ├─ features/teacher/hooks/useTeacherBroadcast.js        │
+│  ├─ features/student/hooks/useStudentConnection.js       │
 │  ├─ sessionCode.js (Geração/validação de códigos)        │
 │  └─ firebase/signaling.js (Sinalização via Firebase)     │
 └────────────────────────────────────────────────────────────┘
@@ -180,9 +181,9 @@ focally-root (Realtime Database)
 ## 5️⃣ Estado do useWebRTC Hook
 
 ```
-┌─────────────────────────────────────────────────────┐
-│         useWebRTC(mode) - Estado Interno             │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│    useTeacherBroadcast() / useStudentConnection() - Estado  │
+└─────────────────────────────────────────────────────────────┘
 
 Estado React (useState):
 ├─ sessionCode: string           # "123456" ou ""
@@ -218,7 +219,7 @@ PROFESSOR VIEW                          ALUNO VIEW
 ─────────────────────────────────────────────────────────
 
 1. MONTAGEM (mount)
-   ├─ useWebRTC('professor')           useWebRTC('aluno')
+   ├─ useTeacherBroadcast()            useStudentConnection()
    ├─ status: "Aguardando..."          status: "Aguardando..."
    ├─ sessionCode: null                sessionCode: null
    └─ isConnected: false               isConnected: false
@@ -330,14 +331,14 @@ APP.JSX (Raiz)
 
    PROFESSORVIEW
    ├─ Responsabilidade: Interface de transmissão
-   ├─ Hooks: useWebRTC('professor')
+   ├─ Hooks: useTeacherBroadcast()
    ├─ Filhos: QRCodeDisplay
    ├─ UI: Botão iniciar, código, QR, status
    └─ Fluxo: Iniciar → Capturar → Aguardar → Transmitir
 
    ALUNOVIEW
    ├─ Responsabilidade: Interface de recepção
-   ├─ Hooks: useWebRTC('aluno')
+   ├─ Hooks: useStudentConnection()
    ├─ Filhos: SessionCodeInput
    ├─ State: Volume professor, volume som, seleção som
    ├─ UI: Input código, scanner QR, sliders volume, seletor som
@@ -469,7 +470,7 @@ Professor           App             Firebase        Browser        Aluno
 
 1. **Entender a estrutura**: Este arquivo + `DOCUMENTATION.md`
 2. **Ver o código**: Comece por `App.jsx`
-3. **Entender WebRTC**: Leia `useWebRTC.js`
+3. **Entender WebRTC**: Leia as pastas `core` e `features`
 4. **Aprender Firebase**: Veja `firebase/signaling.js`
 5. **Configurar**: Siga `FIREBASE_SETUP.md`
 6. **Executar**: `npm install && npm run dev`
