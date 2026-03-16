@@ -13,13 +13,33 @@ vi.mock('../../../src/core/signaling/FirebaseSignalingService', () => ({
 
 vi.mock('../../../src/core/webrtc/WebRTCService', () => ({
     webRTCService: {
-        createPeerConnection: vi.fn().mockReturnValue({
-            addTransceiver: vi.fn(),
-            createOffer: vi.fn().mockResolvedValue('mock-offer'),
-            setLocalDescription: vi.fn().mockResolvedValue(),
-            setRemoteDescription: vi.fn().mockResolvedValue(),
-            localDescription: { sdp: 'mock-sdp' },
-            close: vi.fn(),
+        createPeerConnection: vi.fn().mockImplementation(() => {
+            let stateChangeHandler = null;
+            const pc = {
+                addTransceiver: vi.fn(),
+                createOffer: vi.fn().mockResolvedValue('mock-offer'),
+                setLocalDescription: vi.fn().mockImplementation(async () => {
+                    setTimeout(() => {
+                        pc.iceGatheringState = 'complete';
+                        if (stateChangeHandler) stateChangeHandler();
+                    }, 10);
+                }),
+                setRemoteDescription: vi.fn().mockResolvedValue(),
+                localDescription: { sdp: 'mock-sdp' },
+                close: vi.fn(),
+                iceGatheringState: 'new',
+                addEventListener: vi.fn((event, handler) => {
+                    if (event === 'icegatheringstatechange') {
+                        stateChangeHandler = handler;
+                    }
+                }),
+                removeEventListener: vi.fn((event, handler) => {
+                    if (event === 'icegatheringstatechange' && stateChangeHandler === handler) {
+                        stateChangeHandler = null;
+                    }
+                }),
+            };
+            return pc;
         })
     }
 }));

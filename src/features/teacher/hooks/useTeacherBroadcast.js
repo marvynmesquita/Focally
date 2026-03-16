@@ -30,6 +30,10 @@ export const useTeacherBroadcast = () => {
             }
             setSessionCode(code);
 
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Acesso ao microfone não suportado neste navegador. Se você não estiver usando localhost, certifique-se de que o site está rodando em HTTPS.');
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: AUDIO_CONFIG
             });
@@ -76,7 +80,22 @@ export const useTeacherBroadcast = () => {
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
 
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    if (pc.iceGatheringState !== 'complete') {
+                        await new Promise((resolve) => {
+                            const checkState = () => {
+                                if (pc.iceGatheringState === 'complete') {
+                                    pc.removeEventListener('icegatheringstatechange', checkState);
+                                    clearTimeout(timeoutId);
+                                    resolve();
+                                }
+                            };
+                            const timeoutId = setTimeout(() => {
+                                pc.removeEventListener('icegatheringstatechange', checkState);
+                                resolve(); // Fallback to avoid infinite wait
+                            }, 3000); // 3-second fallback
+                            pc.addEventListener('icegatheringstatechange', checkState);
+                        });
+                    }
 
                     const answerSDP = pc.localDescription.sdp;
                     await signaling.sendAnswer(code, studentId, answerSDP);

@@ -56,7 +56,22 @@ export const useStudentConnection = () => {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (pc.iceGatheringState !== 'complete') {
+                await new Promise((resolve) => {
+                    const checkState = () => {
+                        if (pc.iceGatheringState === 'complete') {
+                            pc.removeEventListener('icegatheringstatechange', checkState);
+                            clearTimeout(timeoutId);
+                            resolve();
+                        }
+                    };
+                    const timeoutId = setTimeout(() => {
+                        pc.removeEventListener('icegatheringstatechange', checkState);
+                        resolve(); // Fallback to avoid infinite wait
+                    }, 3000); // 3-second fallback
+                    pc.addEventListener('icegatheringstatechange', checkState);
+                });
+            }
 
             const offerSDP = pc.localDescription.sdp;
 
