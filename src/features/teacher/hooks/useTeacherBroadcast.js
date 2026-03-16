@@ -41,23 +41,29 @@ export const useTeacherBroadcast = () => {
             localStreamRef.current = stream;
 
             try {
+                console.log('[Teacher] Creating Firebase session for code:', code);
                 await signaling.createSession(code);
                 setStatus(STATUS_MESSAGES.WAITING_STUDENTS);
             } catch (firebaseError) {
+                console.error('[Teacher] Erro ao criar sessão:', firebaseError);
                 setError('Erro ao criar sessão: ' + firebaseError.message);
                 setStatus(STATUS_MESSAGES.ERROR);
                 return;
             }
 
             const onNewOffer = async (studentId, offerSDP) => {
+                console.log(`[Teacher] New offer received from student: ${studentId}`);
                 try {
                     if (peerConnectionsRef.current.has(studentId)) {
+                        console.log(`[Teacher] Already have PC for student: ${studentId}`);
                         return;
                     }
                     setStatus(STATUS_MESSAGES.PROCESSING_STUDENT);
                     const pc = webRTCService.createPeerConnection();
+                    console.log(`[Teacher] Created PC for student: ${studentId}`);
 
                     pc.oniceconnectionstatechange = () => {
+                        console.log(`[Teacher] PC [${studentId}] ICE State Change:`, pc.iceConnectionState);
                         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
                             setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
                             setIsConnected(peerConnectionsRef.current.size > 0);
@@ -74,13 +80,18 @@ export const useTeacherBroadcast = () => {
                         pc.addTrack(track, localStreamRef.current);
                     });
 
+                    console.log(`[Teacher] Added tracks for student: ${studentId}`);
+
                     const offerDesc = new RTCSessionDescription({ type: 'offer', sdp: offerSDP });
                     await pc.setRemoteDescription(offerDesc);
+                    console.log(`[Teacher] Set remote description for student: ${studentId}`);
 
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
+                    console.log(`[Teacher] Created and set local answer description for student: ${studentId}`);
 
                     if (pc.iceGatheringState !== 'complete') {
+                        console.log(`[Teacher] Waiting for ICE candidates to complete for student: ${studentId}...`);
                         await new Promise((resolve) => {
                             const checkState = () => {
                                 if (pc.iceGatheringState === 'complete') {
@@ -98,13 +109,14 @@ export const useTeacherBroadcast = () => {
                     }
 
                     const answerSDP = pc.localDescription.sdp;
+                    console.log(`[Teacher] Sending answer to Firebase for student: ${studentId}`);
                     await signaling.sendAnswer(code, studentId, answerSDP);
 
                     peerConnectionsRef.current.set(studentId, pc);
                     setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
                     setIsConnected(true);
                 } catch (err) {
-                    console.error('Erro ao processar oferta:', err);
+                    console.error('[Teacher] Erro ao processar oferta:', err);
                 }
             };
 

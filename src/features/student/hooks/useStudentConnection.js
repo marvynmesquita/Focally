@@ -25,16 +25,20 @@ export const useStudentConnection = () => {
             sessionCodeRef.current = code;
             setSessionCode(code);
 
+            console.log(`[Student] Connecting with code: ${code}, Student ID: ${studentId}`);
+
             const pc = webRTCService.createPeerConnection();
             peerConnectionRef.current = pc;
 
             pc.ontrack = (event) => {
+                console.log('[Student] Audio track received from teacher');
                 remoteStreamRef.current = event.streams[0];
                 setStatus(STATUS_MESSAGES.CONNECTED);
                 setIsConnected(true);
             };
 
             pc.oniceconnectionstatechange = () => {
+                console.log('[Student] ICE State Change:', pc.iceConnectionState);
                 if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
                     setStatus(STATUS_MESSAGES.CONNECTED);
                     setIsConnected(true);
@@ -47,16 +51,20 @@ export const useStudentConnection = () => {
             };
 
             pc.onerror = (error) => {
+                console.error('[Student] PC Error:', error);
                 setError('Erro na conexão WebRTC');
                 setStatus(STATUS_MESSAGES.ERROR);
             };
 
             pc.addTransceiver('audio', { direction: 'recvonly' });
 
+            console.log('[Student] Creating offer...');
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
+            console.log('[Student] Local description set');
 
             if (pc.iceGatheringState !== 'complete') {
+                console.log('[Student] Waiting for ICE candidates to complete...');
                 await new Promise((resolve) => {
                     const checkState = () => {
                         if (pc.iceGatheringState === 'complete') {
@@ -75,24 +83,33 @@ export const useStudentConnection = () => {
 
             const offerSDP = pc.localDescription.sdp;
 
+            console.log('[Student] Listening for answer from Firebase...');
             unsubscribeRef.current = signaling.listenForAnswer(code, studentId, async (answerSDP) => {
+                console.log('[Student] Answer received from Teacher!');
                 try {
                     if (pc.signalingState === 'have-local-offer') {
                         setStatus(STATUS_MESSAGES.RECEIVING_ANSWER);
                         const answerDesc = new RTCSessionDescription({ type: 'answer', sdp: answerSDP });
                         await pc.setRemoteDescription(answerDesc);
+                        console.log('[Student] Remote description set successfully');
+                    } else {
+                        console.log('[Student] PC State is not have-local-offer:', pc.signalingState);
                     }
                 } catch (err) {
+                    console.error('[Student] Erro ao processar resposta:', err);
                     setError('Erro ao processar resposta: ' + err.message);
                 }
             }, (firebaseError) => {
+                console.error('[Student] Erro no listener do Firebase:', firebaseError);
                 setError('Erro ao escutar a resposta: ' + firebaseError.message);
             });
 
+            console.log('[Student] Sending offer to Firebase');
             await signaling.sendOffer(code, studentId, offerSDP);
             setStatus(STATUS_MESSAGES.OFFER_SENT);
 
         } catch (err) {
+            console.error('[Student] Erro fatal ao conectar:', err);
             setError('Erro ao conectar: ' + err.message);
             setStatus(STATUS_MESSAGES.ERROR);
         }
