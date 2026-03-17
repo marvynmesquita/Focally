@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:uuid/uuid.dart';
-
 import 'package:focally/core/services/signaling_service.dart';
 import 'package:focally/core/services/webrtc_service.dart';
 import 'package:focally/utils/session_code.dart';
+import 'package:focally/ui/widgets/sound_wave_visualizer.dart';
 
 class ProfessorView extends StatefulWidget {
   const ProfessorView({super.key});
@@ -22,8 +22,6 @@ class _ProfessorViewState extends State<ProfessorView> {
   String _sessionCode = '';
   String _status = 'Aguardando';
   bool _isBroadcasting = false;
-  
-  final String _professorId = const Uuid().v4();
 
   @override
   void dispose() {
@@ -35,14 +33,24 @@ class _ProfessorViewState extends State<ProfessorView> {
   }
 
   Future<void> _startBroadcast() async {
+    print('[Professor] Iniciando transmissão...');
     // 1. Pedir permissão de microfone
-    final status = await Permission.microphone.request();
-    if (status != PermissionStatus.granted) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Permissão de microfone necessária para o professor.')),
-      );
-      return;
+    try {
+      if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+        print('[Professor] Solicitando permissão de microfone (Mobile)');
+        final status = await Permission.microphone.request();
+        if (status != PermissionStatus.granted) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Permissão de microfone necessária para o professor.')),
+          );
+          return;
+        }
+      } else {
+        print('[Professor] Pulando permission_handler (Desktop/Web)');
+      }
+    } catch (e) {
+      print('[Professor] Aviso de permissão: $e');
     }
 
     setState(() {
@@ -51,60 +59,51 @@ class _ProfessorViewState extends State<ProfessorView> {
       _sessionCode = SessionCodeUtils.generateCode();
     });
 
+    print('[Professor] Código gerado: $_sessionCode');
+
     try {
-      // Inicializa WebRTC e pega áudio local
-      await _webRTCService.initConnection();
+      // Inicializa WebRTC: Professor pega áudio local apenas UMA VEZ
       await _webRTCService.startLocalStream();
       
-      // Callbacks ICE
-      _webRTCService.onIceCandidate = (candidate) {
-         // O professor não sabe para quem mandar o ICE até que alguém conecte.
-         // Aqui precisaria salvar os candidatos e enviar quando tiver um peer.
-         // Mas como a sinalização do Firebase original envia com studentId:
-         // Implementamos um callback para processar ICE depois.
+      // Callbacks ICE (O professor envia candidatos para um aluno específico)
+      _webRTCService.onIceCandidate = (studentId, candidate) {
+        _signalingService.addIceCandidate(_sessionCode, 'professor', studentId, candidate);
       };
 
       _webRTCService.onConnectionState = (state) {
         if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
-          setState(() => _status = 'Conectado. Transmitindo áudio...');
+          setState(() => _status = 'Transmitindo áudio...');
         } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-          setState(() => _status = 'Aluno desconectado.');
-        } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
-          setState(() => _status = 'Falha na conexão.');
+          setState(() => _status = 'Aguardando novos alunos...');
         }
       };
 
       // 2. Criar sessão Firebase
-      await _signalingService.createSession(_sessionCode, _professorId);
+      await _signalingService.createSession(_sessionCode, 'professor');
       
-      // 3. Escutar Ofertas de Alunos (Aluno se conecta com offer)
+      // 3. Escutar Ofertas de Alunos (1-para-N)
       _signalingService.listenForOffers(_sessionCode, (studentId, offer) async {
-        setState(() => _status = 'Aluno conectando...');
+        debugPrint('Recebida oferta do aluno: $studentId');
         
-        // Professor escuta ICE do aluno direcionado a ele
-        _signalingService.listenForCandidates(_sessionCode, studentId, _professorId, (candidate) {
-          _webRTCService.addIceCandidate(candidate);
+        // Professor escuta ICE do aluno direcionado a ele ('professor')
+        _signalingService.listenForCandidates(_sessionCode, studentId, 'professor', (candidate) {
+          _webRTCService.addIceCandidate(studentId, candidate);
         });
 
-        // Professor passa os seus ICE para o aluno
-        _webRTCService.onIceCandidate = (candidate) {
-          _signalingService.addIceCandidate(_sessionCode, _professorId, studentId, candidate);
-        };
-
-        // Cria e envia answer
-        final answer = await _webRTCService.createAnswer(offer);
+        // Cria e envia answer para este aluno específico
+        final answer = await _webRTCService.createAnswerForStudent(studentId, offer);
         await _signalingService.sendAnswer(_sessionCode, studentId, answer);
       });
 
       setState(() {
-        _status = 'Aguardando aluno na sala...';
+        _status = 'Aguardando alunos na sala...';
       });
 
     } catch (e) {
       debugPrint('Error starting broadcast: $e');
       setState(() {
-        _status = 'Erro: $e';
-        _isBroadcasting = false;
+         _status = 'Erro: $e';
+         _isBroadcasting = false;
       });
     }
   }
@@ -128,7 +127,6 @@ class _ProfessorViewState extends State<ProfessorView> {
         title: const Text('Modo Professor'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black87,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -141,11 +139,18 @@ class _ProfessorViewState extends State<ProfessorView> {
                 size: 80,
                 color: _isBroadcasting ? Colors.redAccent : Colors.grey,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              SoundWaveVisualizer(
+                isActive: _isBroadcasting,
+                color: Colors.redAccent,
+              ),
+              const SizedBox(height: 16),
               Text(
                 _status,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, color: Colors.black54),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 32),
               

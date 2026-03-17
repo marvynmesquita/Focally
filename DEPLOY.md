@@ -1,38 +1,44 @@
-# 🚀 Guia de Deploy no Render
+# 🚀 Guia de Deploy (Flutter Web)
 
-## Configuração no Render
+Este aplicativo foi reescrito para Flutter Web. Abaixo estão as instruções para publicá-lo na internet.
 
-### 1. Configurações do Serviço Web
+## Configuração no Render (Automático)
 
-No painel do Render, configure:
+A maneira mais fácil de fazer o deploy contínuo (CI/CD) ao realizar commits na master é utilizar o Render.
+O arquivo `render.yaml` já está configurado na raiz para:
 
-**Build Command:**
+1. Clonar o SDK do Flutter dinamicamente.
+2. Executar `flutter build web`.
+3. Servir a pasta resultante `build/web` como um Site Estático.
+
+**Como ativar no Render:**
+1. Crie uma conta em [Render.com](https://render.com)
+2. Clique em "New" -> "Blueprint"
+3. Conecte o repositório Github deste projeto.
+4. O Render lerá o `render.yaml` e fará o deploy e a hospedagem gratuita automaticamente.
+
+---
+
+## Alternativa: Firebase Hosting
+
+Como o app usa o Firebase Realtime Database para a sinalização WebRTC, hospedar pelo Firebase também é ideal.
+
+### 1. Inicializar e Preparar
+No terminal, na raiz do projeto:
 ```bash
-npm install && npm run build
+npm install -g firebase-tools
+firebase login
+firebase init hosting
+```
+*(Quando perguntado qual pasta usar como diretório público, digite `build/web`)*
+
+### 2. Realizar o Build
+Compile a versão final do app Flutter para a web:
+```bash
+flutter build web
 ```
 
-**Start Command:**
+### 3. Fazer o Deploy
 ```bash
-npm start
+firebase deploy --only hosting
 ```
-
-**Environment Variables:**
-- `PORT` = `4000` (ou a porta que você desejar)
-- `NODE_ENV` = `production`
-
-### 2. Verificações
-
-- ✅ Certifique-se de que o `PORT` está definido nas variáveis de ambiente
-- ✅ O Build Command deve fazer `npm run build` para gerar os arquivos estáticos
-- ✅ O Start Command deve usar `npm start` que executa `vite preview` (servidor de produção)
-
-### 3. Notas Importantes
-
-- O Render detectará automaticamente a porta se `PORT` estiver definido
-- O servidor Vite preview escuta em `0.0.0.0` para aceitar conexões externas
-- Certifique-se de que o Firebase está configurado corretamente
-
-### 4. Alternativa: Usar render.yaml
-
-Se preferir usar o arquivo `render.yaml`, ele já está configurado no projeto. Basta conectar o repositório no Render e ele usará as configurações do arquivo.
-

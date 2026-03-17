@@ -105,5 +105,4 @@ lerna-debug.log*
 .env.*
 !.env.example
 lib/firebase_options.dart
-firebase.json
 .firebase/
