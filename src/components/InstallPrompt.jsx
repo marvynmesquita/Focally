@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
+import { logger } from '../utils/logger';
 
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
@@ -15,7 +16,7 @@ export default function InstallPrompt() {
     function handleAppInstalled() {
       setDeferredPrompt(null)
       setVisible(false)
-      console.log('App installed')
+      logger.info('App installed')
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall)
@@ -34,70 +35,26 @@ export default function InstallPrompt() {
     deferredPrompt.prompt()
     const choice = await deferredPrompt.userChoice
     if (choice && choice.outcome === 'accepted') {
-      console.log('User accepted the install prompt')
+      logger.info('User accepted the install prompt')
     } else {
-      console.log('User dismissed the install prompt')
+      logger.info('User dismissed the install prompt')
     }
     setDeferredPrompt(null)
     setVisible(false)
   }
 
   return (
-    <div style={containerStyle} role="dialog" aria-live="polite">
-      <div style={contentStyle}>
-        <div>
-          <strong>Instalar Focally</strong>
-          <div style={{ fontSize: 13 }}>Instale o app no dispositivo para acesso mais rápido.</div>
+    <div className="fixed bottom-3 left-3 right-3 z-[1000] flex justify-center p-4" role="dialog" aria-live="polite">
+      <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 shadow-xl border border-white/20 flex flex-col md:flex-row items-center gap-4 w-full max-w-2xl text-white">
+        <div className="flex-1">
+          <strong className="block text-lg">Instalar Focally</strong>
+          <div className="text-sm opacity-90 mt-1">Instale o app no dispositivo para acesso mais rápido.</div>
         </div>
-        <div style={actionsStyle}>
-          <button style={buttonStyle} onClick={onInstallClick}>Instalar</button>
-          <button style={closeStyle} onClick={() => setVisible(false)}>Fechar</button>
+        <div className="flex gap-2 ml-auto">
+          <button className="bg-neon-cyan hover:bg-neon-cyan/80 text-black font-semibold py-2 px-4 rounded-lg transition-colors" onClick={onInstallClick}>Instalar</button>
+          <button className="bg-transparent border border-white/30 hover:bg-white/10 text-white font-medium py-2 px-4 rounded-lg transition-colors" onClick={() => setVisible(false)}>Fechar</button>
         </div>
       </div>
     </div>
   )
-}
-
-const containerStyle = {
-  position: 'fixed',
-  left: 12,
-  right: 12,
-  bottom: 12,
-  zIndex: 1000,
-  display: 'flex',
-  justifyContent: 'center'
-}
-
-const contentStyle = {
-  background: '#fff',
-  borderRadius: 8,
-  padding: '12px 16px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  maxWidth: 720,
-  width: '100%'
-}
-
-const actionsStyle = {
-  marginLeft: 'auto',
-  display: 'flex',
-  gap: 8
-}
-
-const buttonStyle = {
-  background: '#1f8feb',
-  color: '#fff',
-  border: 'none',
-  padding: '8px 12px',
-  borderRadius: 6,
-  cursor: 'pointer'
-}
-
-const closeStyle = {
-  background: 'transparent',
-  border: 'none',
-  color: '#333',
-  cursor: 'pointer'
 }

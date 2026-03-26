@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStudentConnection } from './features/student/hooks/useStudentConnection';
 import SessionCodeInput from './components/SessionCodeInput';
 import { isFirebaseConfigured } from './firebase/config';
@@ -6,7 +6,9 @@ import AudioVisualizerBackground from './components/AudioVisualizerBackground';
 import GlassCard from './components/GlassCard';
 import VolumeSlider from './components/VolumeSlider';
 import BinauralSelector from './components/BinauralSelector';
-import { audioContextManager } from './core/audio/AudioContextManager';
+import { useAudioMixer } from './features/student/hooks/useAudioMixer';
+import { FALLBACK_SOUND_OPTIONS } from './config/constants';
+import { logger } from './utils/logger';
 
 function AlunoView() {
   const {
@@ -21,12 +23,21 @@ function AlunoView() {
 
   const professorAudioRef = useRef(null);
   const soundWaveAudioRef = useRef(null);
-  const combinedStreamRef = useRef(null);
 
   const [professorVolume, setProfessorVolume] = useState(1);
   const [soundWaveVolume, setSoundWaveVolume] = useState(0.2);
   const [selectedSound, setSelectedSound] = useState('');
-  const [combinedStream, setCombinedStream] = useState(null);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+
+  const { combinedStream } = useAudioMixer({
+    isConnected,
+    remoteStream,
+    soundWaveAudioRef,
+    selectedSound
+  });
+
+  const handleProfessorVolume = useCallback((e) => setProfessorVolume(Number(e.target.value)), []);
+  const handleSoundWaveVolume = useCallback((e) => setSoundWaveVolume(Number(e.target.value)), []);
 
   useEffect(() => {
     return () => {
@@ -41,55 +52,7 @@ function AlunoView() {
     }
   }, [remoteStream]);
 
-  // Criar stream combinado para o visualizador
-  useEffect(() => {
-    if (!isConnected) {
-      setCombinedStream(null);
-      return;
-    }
-
-    try {
-      const audioContext = audioContextManager.getAudioContext();
-
-      const destination = audioContext.createMediaStreamDestination();
-
-      // Conectar áudio do professor se disponível
-      if (remoteStream) {
-        try {
-          const professorSource = audioContext.createMediaStreamSource(remoteStream);
-          professorSource.connect(destination);
-        } catch (e) {
-          console.warn('Erro ao conectar stream do professor:', e);
-        }
-      }
-
-      // Conectar áudio da onda sonora se disponível
-      if (soundWaveAudioRef.current && selectedSound) {
-        try {
-          // Verificar se já não foi conectado antes
-          if (!soundWaveAudioRef.current._connectedToContext) {
-            const soundSource = audioContext.createMediaElementSource(soundWaveAudioRef.current);
-            soundSource.connect(destination);
-            soundSource.connect(audioContext.destination); // Manter áudio audível
-            soundWaveAudioRef.current._connectedToContext = true;
-            soundWaveAudioRef.current._audioSource = soundSource;
-          } else if (soundWaveAudioRef.current._audioSource) {
-            // Reconectar se já existe
-            soundWaveAudioRef.current._audioSource.connect(destination);
-          }
-        } catch (e) {
-          console.warn('Erro ao conectar onda sonora:', e);
-        }
-      }
-
-      setCombinedStream(destination.stream);
-      combinedStreamRef.current = destination.stream;
-    } catch (error) {
-      console.warn('Erro ao criar stream combinado:', error);
-      // Fallback para apenas remoteStream
-      setCombinedStream(remoteStream);
-    }
-  }, [isConnected, remoteStream, selectedSound]);
+  // Stream combinado agora é gerenciado pelo useAudioMixer
 
   useEffect(() => {
     if (professorAudioRef.current) {
@@ -104,10 +67,16 @@ function AlunoView() {
       if (selectedSound) {
         const soundFile = `/audio/${selectedSound}.mp3`;
         if (soundWaveAudioRef.current.src.endsWith(soundFile)) {
-          soundWaveAudioRef.current.play().catch(e => console.warn("Reprodução automática bloqueada"));
+          soundWaveAudioRef.current.play().catch(e => {
+            logger.warn('Interação: Reprodução automática bloqueada pelo navegador da Apple ou Edge');
+            setAutoplayBlocked(true);
+          });
         } else {
           soundWaveAudioRef.current.src = soundFile;
-          soundWaveAudioRef.current.play().catch(e => console.warn("Reprodução automática bloqueada"));
+          soundWaveAudioRef.current.play().catch(e => {
+            logger.warn('Interação: Reprodução automática bloqueada pelo navegador da Apple ou Edge');
+            setAutoplayBlocked(true);
+          });
         }
       } else {
         soundWaveAudioRef.current.pause();
@@ -116,19 +85,27 @@ function AlunoView() {
     }
   }, [selectedSound, soundWaveVolume]);
 
-  const soundOptions = [
-    { value: 'white-noise', label: 'Ruído Branco' },
-    { value: 'pink-noise', label: 'Ruído Rosa' },
-    { value: 'brown-noise', label: 'Ruído Marrom' },
-    { value: 'beta-wave', label: 'Beta (Foco)' },
-    { value: 'theta-wave', label: 'Theta (Relaxamento)' },
-  ];
+
 
   return (
     <div className="relative w-full max-w-2xl mx-auto">
       <AudioVisualizerBackground active={isConnected} audioStream={combinedStream} />
 
       <GlassCard className="flex flex-col items-center">
+        {autoplayBlocked && (
+          <div 
+            onClick={() => {
+              setAutoplayBlocked(false);
+              if (soundWaveAudioRef.current) {
+                soundWaveAudioRef.current.play();
+              }
+            }}
+            className="mb-8 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 text-center cursor-pointer hover:bg-yellow-500/20 transition-colors"
+          >
+            <strong>⚠️ Reprodução de Áudio Bloqueada</strong>
+            <p className="text-sm mt-2">Clique aqui para habilitar o som na página.</p>
+          </div>
+        )}
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-bold mb-2 text-white">Modo Aluno</h2>
         </div>
@@ -176,7 +153,7 @@ function AlunoView() {
                 <div className="p-4 bg-white/5 rounded-xl border border-white/10">
                   <VolumeSlider
                     value={professorVolume}
-                    onChange={(e) => setProfessorVolume(Number(e.target.value))}
+                    onChange={handleProfessorVolume}
                     label="Volume do Professor"
                     icon="🎙️"
                   />
@@ -190,13 +167,13 @@ function AlunoView() {
                     <BinauralSelector
                       selected={selectedSound}
                       onSelect={setSelectedSound}
-                      options={soundOptions}
+                      options={FALLBACK_SOUND_OPTIONS}
                     />
                   </div>
 
                   <VolumeSlider
                     value={soundWaveVolume}
-                    onChange={(e) => setSoundWaveVolume(Number(e.target.value))}
+                    onChange={handleSoundWaveVolume}
                     label="Volume do Som"
                     icon="🔊"
                     disabled={!selectedSound}

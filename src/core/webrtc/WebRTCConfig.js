@@ -1,29 +1,23 @@
-export const getRTCConfig = () => ({
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        {
-            urls: "stun:stun.relay.metered.ca:80",
-        },
-        {
-            urls: "turn:standard.relay.metered.ca:80",
-            username: import.meta.env.VITE_TURN_USERNAME,
-            credential: import.meta.env.VITE_TURN_CREDENTIAL,
-        },
-        {
-            urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-            username: import.meta.env.VITE_TURN_USERNAME,
-            credential: import.meta.env.VITE_TURN_CREDENTIAL,
-        },
-        {
-            urls: "turn:standard.relay.metered.ca:443",
-            username: import.meta.env.VITE_TURN_USERNAME,
-            credential: import.meta.env.VITE_TURN_CREDENTIAL,
-        },
-        {
-            urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-            username: import.meta.env.VITE_TURN_USERNAME,
-            credential: import.meta.env.VITE_TURN_CREDENTIAL,
-        },
-    ]
-});
+import { logger } from '../../utils/logger';
+
+export const getRTCConfig = async () => {
+    try {
+        // Idealmente, consumir de uma Rota de API protegida que fornece credenciais efêmeras
+        const response = await fetch('/api/get-turn-credentials');
+        
+        if (!response.ok) {
+            throw new Error('Falha ao buscar credenciais TURN');
+        }
+        
+        const data = await response.json();
+        return { iceServers: data.iceServers };
+    } catch (error) {
+        logger.warn('Usando STUN de fallback (sem TURN) devido a erro na API:', error);
+        return {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+            ]
+        };
+    }
+};

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { validateSessionCode } from '../utils/sessionCode';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import NeonButton from './NeonButton';
+import { logger } from '../utils/logger';
 
 /**
  * Componente para entrada de código de sessão com opção de escanear QR Code
@@ -40,7 +41,7 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
               sessionCode = codeFromUrl;
             }
           } catch (e) {
-            // Ignora
+            logger.warn('Ignorado: Formato do QRCode não pôde ser parseado via URL Object', e);
           }
         }
         
@@ -54,14 +55,14 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
       };
 
       const onScanError = (errorMessage) => {
-        // Não faz nada
+        logger.warn('Erro ao escanear QRCode:', errorMessage);
       };
 
       html5QrcodeScanner.render(onScanSuccess, onScanError);
 
       return () => {
         html5QrcodeScanner.clear().catch(err => {
-          console.error("Falha ao limpar o Html5QrcodeScanner.", err);
+          logger.error("Falha ao limpar o Html5QrcodeScanner.", err);
         });
       };
     }

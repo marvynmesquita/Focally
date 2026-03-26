@@ -5,6 +5,7 @@ import ViewRouter from './components/ViewRouter'
 import ErrorBoundary from './components/ErrorBoundary'
 import GlassCard from './components/GlassCard'
 import AudioVisualizerBackground from './components/AudioVisualizerBackground'
+import { logger } from './utils/logger'
 
 function App() {
   const [mode, setMode] = useState(null)
@@ -28,7 +29,7 @@ function App() {
         )
       }
     } catch (e) {
-      console.error('Erro ao ler parâmetros da URL:', e)
+      logger.error('Erro ao ler parâmetros da URL:', e)
     }
   }, [])
 

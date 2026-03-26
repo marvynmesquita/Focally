@@ -1,15 +1,19 @@
 import { getRTCConfig } from './WebRTCConfig';
+import { logger } from '../../utils/logger';
 
 export class WebRTCService {
     constructor() {
-        this.config = getRTCConfig();
+        this.config = null;
     }
 
-    createPeerConnection() {
+    async createPeerConnection() {
         try {
+            if (!this.config) {
+                this.config = await getRTCConfig();
+            }
             return new RTCPeerConnection(this.config);
         } catch (err) {
-            console.error('Erro ao inicializar PeerConnection:', err);
+            logger.error('Erro ao inicializar PeerConnection:', err);
             throw err;
         }
     }

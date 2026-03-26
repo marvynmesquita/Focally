@@ -1,4 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { audioContextManager } from '../core/audio/AudioContextManager';
+import { logger } from '../utils/logger';
+import { VISUALIZER_CONFIG } from '../config/constants';
 
 const AudioVisualizerBackground = ({ active, audioStream }) => {
   const canvasRef = useRef(null);
@@ -22,7 +25,7 @@ const AudioVisualizerBackground = ({ active, audioStream }) => {
     if (active && audioStream) {
       try {
         if (!audioContextRef.current) {
-          audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+          audioContextRef.current = audioContextManager.getAudioContext();
         }
         
         const audioContext = audioContextRef.current;
@@ -33,16 +36,16 @@ const AudioVisualizerBackground = ({ active, audioStream }) => {
         }
         
         const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256; // Aumentado para melhor resposta
-        analyser.smoothingTimeConstant = 0.7;
+        analyser.fftSize = VISUALIZER_CONFIG.FFT_SIZE; // Aumentado para melhor resposta
+        analyser.smoothingTimeConstant = VISUALIZER_CONFIG.SMOOTHING;
         
         const source = audioContext.createMediaStreamSource(audioStream);
         source.connect(analyser);
         analyserRef.current = analyser;
         
-        console.log('Visualizador de áudio inicializado com sucesso');
+        logger.log('Visualizador de áudio inicializado com sucesso');
       } catch (e) {
-        console.warn('Erro ao criar visualizador de áudio:', e);
+        logger.warn('Erro ao criar visualizador de áudio:', e);
       }
     } else {
       // Limpar analyser quando não estiver ativo

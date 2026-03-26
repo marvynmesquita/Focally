@@ -1,6 +1,7 @@
 import { ref, set, onValue, off, remove, onChildAdded, onChildRemoved } from 'firebase/database';
 import { database, isFirebaseConfigured } from '../../firebase/config';
 import { ISignalingService } from './ISignalingService';
+import { logger } from '../../utils/logger';
 
 export class FirebaseSignalingService extends ISignalingService {
     checkFirebase() {
@@ -40,12 +41,24 @@ export class FirebaseSignalingService extends ISignalingService {
 
     async sendOffer(sessionCode, studentId, offer) {
         this.checkFirebase();
+        if (typeof offer !== 'string' || offer.length > 10000) {
+            throw new Error('Payload SDP inválido.');
+        }
+        if (!offer.startsWith('v=0\r\n')) {
+            throw new Error('Formato de SDP recusado no Client-Side (Oferta inválida).');
+        }
         const offerRef = ref(database, `sessions/${sessionCode}/offers/${studentId}`);
         await set(offerRef, offer);
     }
 
     async sendAnswer(sessionCode, studentId, answer) {
         this.checkFirebase();
+        if (typeof answer !== 'string' || answer.length > 10000) {
+            throw new Error('Payload SDP inválido.');
+        }
+        if (!answer.startsWith('v=0\r\n')) {
+            throw new Error('Formato de SDP recusado no Client-Side (Resposta inválida).');
+        }
         const answerRef = ref(database, `sessions/${sessionCode}/answers/${studentId}`);
         await set(answerRef, answer);
     }
@@ -62,7 +75,7 @@ export class FirebaseSignalingService extends ISignalingService {
                 }
             },
             (error) => {
-                console.error('Erro ao escutar resposta no Firebase:', error);
+                logger.error('Erro ao escutar resposta no Firebase:', error);
                 if (errorCallback) {
                     errorCallback(error);
                 }
@@ -77,16 +90,24 @@ export class FirebaseSignalingService extends ISignalingService {
 
     async cleanupOffer(sessionCode, studentId) {
         if (!isFirebaseConfigured || !database) return;
-        const offerRef = ref(database, `sessions/${sessionCode}/offers/${studentId}`);
-        await remove(offerRef);
-        const answerRef = ref(database, `sessions/${sessionCode}/answers/${studentId}`);
-        await remove(answerRef);
+        try {
+            const offerRef = ref(database, `sessions/${sessionCode}/offers/${studentId}`);
+            await remove(offerRef);
+            const answerRef = ref(database, `sessions/${sessionCode}/answers/${studentId}`);
+            await remove(answerRef);
+        } catch (error) {
+            logger.error('Erro ao limpar a oferta do Firebase:', error);
+        }
     }
 
     async cleanupSession(sessionCode) {
         if (!isFirebaseConfigured || !database) return;
-        const sessionRef = ref(database, `sessions/${sessionCode}`);
-        await remove(sessionRef);
+        try {
+            const sessionRef = ref(database, `sessions/${sessionCode}`);
+            await remove(sessionRef);
+        } catch (error) {
+            logger.error('Erro ao limpar sessão no Firebase:', error);
+        }
     }
 }
 

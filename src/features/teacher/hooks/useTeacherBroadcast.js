@@ -2,12 +2,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { firebaseSignalingService as signaling } from '../../../core/signaling/FirebaseSignalingService';
 import { webRTCService } from '../../../core/webrtc/WebRTCService';
 import { generateSessionCode } from '../../../utils/sessionCode';
-import { STATUS_MESSAGES, AUDIO_CONFIG } from '../../../config/constants';
+import { STATUS_MESSAGES, AUDIO_CONFIG, WEBRTC_CONFIG } from '../../../config/constants';
+import { logger } from '../../../utils/logger';
 
 export const useTeacherBroadcast = () => {
-    const [sessionCode, setSessionCode] = useState(
-        (typeof window !== 'undefined') ? localStorage.getItem('focally_session_code') || '' : ''
-    );
+    const [sessionCode, setSessionCode] = useState('');
     const [error, setError] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
     const [status, setStatus] = useState(STATUS_MESSAGES.WAITING);
@@ -25,9 +24,6 @@ export const useTeacherBroadcast = () => {
             const code = generateSessionCode();
             sessionCodeRef.current = code;
 
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('focally_session_code', code);
-            }
             setSessionCode(code);
 
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -41,29 +37,29 @@ export const useTeacherBroadcast = () => {
             localStreamRef.current = stream;
 
             try {
-                console.log('[Teacher] Creating Firebase session for code:', code);
+                logger.log('[Teacher] Creating Firebase session for code:', code);
                 await signaling.createSession(code);
                 setStatus(STATUS_MESSAGES.WAITING_STUDENTS);
             } catch (firebaseError) {
-                console.error('[Teacher] Erro ao criar sessão:', firebaseError);
+                logger.error('[Teacher] Erro ao criar sessão:', firebaseError);
                 setError('Erro ao criar sessão: ' + firebaseError.message);
                 setStatus(STATUS_MESSAGES.ERROR);
                 return;
             }
 
             const onNewOffer = async (studentId, offerSDP) => {
-                console.log(`[Teacher] New offer received from student: ${studentId}`);
+                logger.log(`[Teacher] New offer received from student: ${studentId}`);
                 try {
                     if (peerConnectionsRef.current.has(studentId)) {
-                        console.log(`[Teacher] Already have PC for student: ${studentId}`);
+                        logger.log(`[Teacher] Already have PC for student: ${studentId}`);
                         return;
                     }
                     setStatus(STATUS_MESSAGES.PROCESSING_STUDENT);
-                    const pc = webRTCService.createPeerConnection();
-                    console.log(`[Teacher] Created PC for student: ${studentId}`);
+                    const pc = await webRTCService.createPeerConnection();
+                    logger.log(`[Teacher] Created PC for student: ${studentId}`);
 
                     pc.oniceconnectionstatechange = () => {
-                        console.log(`[Teacher] PC [${studentId}] ICE State Change:`, pc.iceConnectionState);
+                        logger.log(`[Teacher] PC [${studentId}] ICE State Change:`, pc.iceConnectionState);
                         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
                             setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
                             setIsConnected(peerConnectionsRef.current.size > 0);
@@ -80,19 +76,20 @@ export const useTeacherBroadcast = () => {
                         pc.addTrack(track, localStreamRef.current);
                     });
 
-                    console.log(`[Teacher] Added tracks for student: ${studentId}`);
+                    logger.log(`[Teacher] Added tracks for student: ${studentId}`);
 
                     const offerDesc = new RTCSessionDescription({ type: 'offer', sdp: offerSDP });
                     await pc.setRemoteDescription(offerDesc);
-                    console.log(`[Teacher] Set remote description for student: ${studentId}`);
+                    logger.log(`[Teacher] Set remote description for student: ${studentId}`);
 
                     const answer = await pc.createAnswer();
                     await pc.setLocalDescription(answer);
-                    console.log(`[Teacher] Created and set local answer description for student: ${studentId}`);
+                    logger.log(`[Teacher] Created and set local answer description for student: ${studentId}`);
 
                     if (pc.iceGatheringState !== 'complete') {
-                        console.log(`[Teacher] Waiting for ICE candidates to complete for student: ${studentId}...`);
+                        logger.log(`[Teacher] Waiting for ICE candidates to complete for student: ${studentId}...`);
                         await new Promise((resolve) => {
+                            let timeoutId;
                             const checkState = () => {
                                 if (pc.iceGatheringState === 'complete') {
                                     pc.removeEventListener('icegatheringstatechange', checkState);
@@ -100,23 +97,23 @@ export const useTeacherBroadcast = () => {
                                     resolve();
                                 }
                             };
-                            const timeoutId = setTimeout(() => {
+                            timeoutId = setTimeout(() => {
                                 pc.removeEventListener('icegatheringstatechange', checkState);
                                 resolve(); // Fallback to avoid infinite wait
-                            }, 3000); // 3-second fallback
+                            }, WEBRTC_CONFIG.ICE_GATHERING_TIMEOUT_MS);
                             pc.addEventListener('icegatheringstatechange', checkState);
                         });
                     }
 
                     const answerSDP = pc.localDescription.sdp;
-                    console.log(`[Teacher] Sending answer to Firebase for student: ${studentId}`);
+                    logger.log(`[Teacher] Sending answer to Firebase for student: ${studentId}`);
                     await signaling.sendAnswer(code, studentId, answerSDP);
 
                     peerConnectionsRef.current.set(studentId, pc);
                     setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
                     setIsConnected(true);
                 } catch (err) {
-                    console.error('[Teacher] Erro ao processar oferta:', err);
+                    logger.error('[Teacher] Erro ao processar oferta:', err);
                 }
             };
 
@@ -151,7 +148,7 @@ export const useTeacherBroadcast = () => {
             try {
                 await signaling.cleanupSession(currentSessionCode);
             } catch (err) {
-                console.error('Erro ao limpar sessão:', err);
+                logger.error('Erro ao limpar sessão:', err);
             }
         }
 
@@ -161,10 +158,6 @@ export const useTeacherBroadcast = () => {
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
-        }
-
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('focally_session_code');
         }
 
         setIsConnected(false);

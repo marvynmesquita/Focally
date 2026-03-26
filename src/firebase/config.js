@@ -1,6 +1,6 @@
-// Importar Firebase
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
+import { logger } from '../utils/logger';
 
 // IMPORTANTE: Substitua estas configurações pelas suas credenciais do Firebase
 // Para obter essas credenciais:
@@ -28,7 +28,7 @@ const isConfigValid =
   firebaseConfig.databaseURL && firebaseConfig.databaseURL !== "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/";
 
 if (!isConfigValid) {
-  console.error(`
+  logger.error(`
     ⚠️ FIREBASE NÃO CONFIGURADO!
     
     Por favor, configure o Firebase antes de usar o aplicativo:
@@ -51,20 +51,20 @@ try {
     if (existingApps.length > 0) {
       // Usar a app existente
       app = getApp();
-      console.log('Firebase: usando instância existente');
+      logger.log('Firebase: usando instância existente');
     } else {
       // Criar nova app
       app = initializeApp(firebaseConfig);
-      console.log('Firebase inicializado com sucesso');
+      logger.log('Firebase inicializado com sucesso');
     }
     database = getDatabase(app);
   } else {
     // Criar objetos mock para evitar erros durante o desenvolvimento
     database = null;
-    console.warn('Firebase não inicializado - configure as credenciais primeiro');
+    logger.warn('Firebase não inicializado - configure as credenciais primeiro');
   }
 } catch (error) {
-  console.error('Erro ao inicializar Firebase:', error);
+  logger.error('Erro ao inicializar Firebase:', error);
   database = null;
 }
 

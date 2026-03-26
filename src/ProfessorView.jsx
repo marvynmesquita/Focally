@@ -16,17 +16,11 @@ function ProfessorView() {
     startTransmission,
     cleanup
   } = useTeacherBroadcast();
-
-  const cleanupRef = useRef(cleanup);
-  cleanupRef.current = cleanup;
-
   useEffect(() => {
     return () => {
-      if (sessionCode || isConnected) {
-        cleanupRef.current();
-      }
+      cleanup();
     };
-  }, []);
+  }, [cleanup]);
 
   const handleCopyCode = () => {
     if (sessionCode) {
