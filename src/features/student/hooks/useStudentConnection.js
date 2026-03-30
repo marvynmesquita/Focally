@@ -13,6 +13,7 @@ export const useStudentConnection = () => {
     const peerConnectionRef = useRef(null);
     const remoteStreamRef = useRef(null);
     const unsubscribeRef = useRef(null);
+    const unsubscribeSessionCloseRef = useRef(null);
     const sessionCodeRef = useRef('');
     const studentIdRef = useRef(null);
 
@@ -55,6 +56,15 @@ export const useStudentConnection = () => {
                 logger.error('[Student] PC Error:', error);
                 setError('Erro na conexão WebRTC');
                 setStatus(STATUS_MESSAGES.ERROR);
+            };
+
+            pc.onconnectionstatechange = () => {
+                logger.log('[Student] PC Connection State:', pc.connectionState);
+                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                    setStatus(STATUS_MESSAGES.DISCONNECTED);
+                    setError('A transmissão do professor foi encerrada.');
+                    setIsConnected(false);
+                }
             };
 
             pc.addTransceiver('audio', { direction: 'recvonly' });
@@ -110,6 +120,16 @@ export const useStudentConnection = () => {
             await signaling.sendOffer(code, studentId, offerSDP);
             setStatus(STATUS_MESSAGES.OFFER_SENT);
 
+            unsubscribeSessionCloseRef.current = signaling.listenForSessionClose(code, () => {
+                logger.log('[Student] Session closed by teacher (from Firebase).');
+                setStatus(STATUS_MESSAGES.DISCONNECTED);
+                setError('A transmissão do professor foi encerrada.');
+                setIsConnected(false);
+                if (peerConnectionRef.current) {
+                    peerConnectionRef.current.close();
+                }
+            });
+
         } catch (err) {
             logger.error('[Student] Erro fatal ao conectar:', err);
             setError('Erro ao conectar: ' + err.message);
@@ -124,6 +144,11 @@ export const useStudentConnection = () => {
         if (unsubscribeRef.current) {
             unsubscribeRef.current();
             unsubscribeRef.current = null;
+        }
+
+        if (unsubscribeSessionCloseRef.current) {
+            unsubscribeSessionCloseRef.current();
+            unsubscribeSessionCloseRef.current = null;
         }
 
         if (currentSessionCode && currentStudentId) {

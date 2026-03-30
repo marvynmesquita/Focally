@@ -85,6 +85,26 @@ export class FirebaseSignalingService extends ISignalingService {
         return () => {
             off(answerRef);
             unsubscribe();
+            // Workaround para onValue unsubscribe not completely unbinding listeners immediately in some cases
+        };
+    }
+
+    listenForSessionClose(sessionCode, onClosedCallback) {
+        this.checkFirebase();
+        const sessionRef = ref(database, `sessions/${sessionCode}`);
+        
+        let initialDataLoaded = false;
+        
+        const unsubscribe = onValue(sessionRef, (snapshot) => {
+            if (initialDataLoaded && !snapshot.exists()) {
+                onClosedCallback();
+            }
+            initialDataLoaded = true;
+        });
+        
+        return () => {
+            off(sessionRef);
+            unsubscribe();
         };
     }
 

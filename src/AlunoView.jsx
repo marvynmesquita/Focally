@@ -9,6 +9,7 @@ import BinauralSelector from './components/BinauralSelector';
 import { useAudioMixer } from './features/student/hooks/useAudioMixer';
 import { FALLBACK_SOUND_OPTIONS } from './config/constants';
 import { logger } from './utils/logger';
+import { useWakeLock } from './hooks/useWakeLock';
 
 function AlunoView() {
   const {
@@ -21,11 +22,13 @@ function AlunoView() {
     cleanup
   } = useStudentConnection();
 
+  const { requestWakeLock, releaseWakeLock } = useWakeLock();
+
   const professorAudioRef = useRef(null);
   const soundWaveAudioRef = useRef(null);
 
   const [professorVolume, setProfessorVolume] = useState(1);
-  const [soundWaveVolume, setSoundWaveVolume] = useState(0.2);
+  const [soundWaveVolume, setSoundWaveVolume] = useState(1);
   const [selectedSound, setSelectedSound] = useState('');
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
 
@@ -84,6 +87,20 @@ function AlunoView() {
       }
     }
   }, [selectedSound, soundWaveVolume]);
+
+  useEffect(() => {
+    if (isConnected) {
+      setSelectedSound('beta-wave');
+      requestWakeLock();
+    } else {
+      setSelectedSound('');
+      releaseWakeLock();
+      // Sai da tela cheia ao desconectar, se estiver nela
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(err => logger.warn('Erro ao sair da tela cheia', err));
+      }
+    }
+  }, [isConnected, requestWakeLock, releaseWakeLock]);
 
 
 

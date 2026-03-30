@@ -46,6 +46,11 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
         }
         
         if (validateSessionCode(sessionCode)) {
+          // Tentativa de tela cheia ao interagir
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(err => logger.warn('Fullscreen bloqueada', err));
+          }
+
           onConnect(sessionCode);
           setCode(sessionCode);
           setShowQRScanner(false);
@@ -77,6 +82,12 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
       setError('Código inválido. Digite 6 dígitos.');
       return;
     }
+
+    // Tentativa de tela cheia ao interagir
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(err => logger.warn('Fullscreen bloqueada', err));
+    }
+
     onConnect(code);
   };
 

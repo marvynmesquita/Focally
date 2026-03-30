@@ -5,6 +5,7 @@ import { isFirebaseConfigured } from './firebase/config';
 import AudioVisualizerBackground from './components/AudioVisualizerBackground';
 import GlassCard from './components/GlassCard';
 import NeonButton from './components/NeonButton';
+import { useWakeLock } from './hooks/useWakeLock';
 
 function ProfessorView() {
   const {
@@ -16,11 +17,23 @@ function ProfessorView() {
     startTransmission,
     cleanup
   } = useTeacherBroadcast();
+
+  const { requestWakeLock, releaseWakeLock } = useWakeLock();
+
   useEffect(() => {
     return () => {
       cleanup();
+      releaseWakeLock();
     };
-  }, [cleanup]);
+  }, [cleanup, releaseWakeLock]);
+
+  useEffect(() => {
+    if (sessionCode) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+  }, [sessionCode, requestWakeLock, releaseWakeLock]);
 
   const handleCopyCode = () => {
     if (sessionCode) {

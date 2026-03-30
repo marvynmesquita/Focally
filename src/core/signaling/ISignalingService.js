@@ -23,6 +23,10 @@ export class ISignalingService {
         throw new Error('Method not implemented.');
     }
 
+    listenForSessionClose(sessionCode, onClosedCallback) {
+        throw new Error('Method not implemented.');
+    }
+
     async cleanupOffer(sessionCode, studentId) {
         throw new Error('Method not implemented.');
     }
