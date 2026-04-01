@@ -8,6 +8,7 @@ vi.mock('../../../src/core/signaling/FirebaseSignalingService', () => ({
         sendOffer: vi.fn(),
         listenForAnswer: vi.fn(),
         cleanupOffer: vi.fn(),
+        listenForSessionClose: vi.fn(),
     }
 }));
 
@@ -25,7 +26,7 @@ vi.mock('../../../src/core/webrtc/WebRTCService', () => ({
                     }, 10);
                 }),
                 setRemoteDescription: vi.fn().mockResolvedValue(),
-                localDescription: { sdp: 'mock-sdp' },
+                localDescription: { sdp: 'v=0\r\no=offer' },
                 close: vi.fn(),
                 iceGatheringState: 'new',
                 addEventListener: vi.fn((event, handler) => {

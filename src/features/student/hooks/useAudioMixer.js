@@ -5,11 +5,12 @@ import { logger } from '../../../utils/logger';
 export const useAudioMixer = ({ isConnected, remoteStream, soundWaveAudioRef, selectedSound }) => {
   const [combinedStream, setCombinedStream] = useState(null);
   const [mixerError, setMixerError] = useState(null);
-  const combinedStreamRef = useRef(null);
   const audioSourceRef = useRef(null);
+  const audioElementRef = useRef(null);
 
   useEffect(() => {
     if (!isConnected) {
+      setMixerError(null);
       setCombinedStream(null);
       return;
     }
@@ -18,6 +19,7 @@ export const useAudioMixer = ({ isConnected, remoteStream, soundWaveAudioRef, se
     let professorSource = null;
 
     try {
+      setMixerError(null);
       const audioContext = audioContextManager.getAudioContext();
       destination = audioContext.createMediaStreamDestination();
 
@@ -33,8 +35,12 @@ export const useAudioMixer = ({ isConnected, remoteStream, soundWaveAudioRef, se
 
       if (soundWaveAudioRef.current && selectedSound) {
         try {
-          if (!audioSourceRef.current) {
+          if (audioElementRef.current !== soundWaveAudioRef.current) {
+            if (audioSourceRef.current) {
+              audioSourceRef.current.disconnect();
+            }
             audioSourceRef.current = audioContext.createMediaElementSource(soundWaveAudioRef.current);
+            audioElementRef.current = soundWaveAudioRef.current;
           }
           audioSourceRef.current.connect(destination);
           audioSourceRef.current.connect(audioContext.destination);
@@ -45,11 +51,10 @@ export const useAudioMixer = ({ isConnected, remoteStream, soundWaveAudioRef, se
       }
 
       setCombinedStream(destination.stream);
-      combinedStreamRef.current = destination.stream;
     } catch (error) {
       logger.warn('Erro ao criar stream combinado:', error);
       setMixerError('Falha no mixer de áudio. Atualize a página e tente novamente.');
-      setCombinedStream(remoteStream);
+      setCombinedStream(remoteStream ?? null);
     }
 
     return () => {

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { generateSessionCode, validateSessionCode } from '../../../src/utils/sessionCode';
+import { generateSessionCode, normalizeSessionCode, validateSessionCode } from '../../../src/utils/sessionCode';
 
 describe('generateSessionCode', () => {
     test('deve gerar código de 6 dígitos', () => {
@@ -38,5 +38,15 @@ describe('validateSessionCode', () => {
     test('deve rejeitar código null/undefined', () => {
         expect(validateSessionCode(null)).toBe(false);
         expect(validateSessionCode(undefined)).toBe(false);
+    });
+});
+
+describe('normalizeSessionCode', () => {
+    test('deve remover espaços nas extremidades', () => {
+        expect(normalizeSessionCode(' 123456 ')).toBe('123456');
+    });
+
+    test('deve retornar string vazia para valores inválidos', () => {
+        expect(normalizeSessionCode(null)).toBe('');
     });
 });

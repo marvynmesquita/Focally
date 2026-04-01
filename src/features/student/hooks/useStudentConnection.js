@@ -3,6 +3,7 @@ import { firebaseSignalingService as signaling } from '../../../core/signaling/F
 import { webRTCService } from '../../../core/webrtc/WebRTCService';
 import { STATUS_MESSAGES, WEBRTC_CONFIG } from '../../../config/constants';
 import { logger } from '../../../utils/logger';
+import { normalizeSessionCode, validateSessionCode } from '../../../utils/sessionCode';
 
 export const useStudentConnection = () => {
     const [sessionCode, setSessionCode] = useState('');
@@ -17,17 +18,63 @@ export const useStudentConnection = () => {
     const sessionCodeRef = useRef('');
     const studentIdRef = useRef(null);
 
+    const cleanup = useCallback(async () => {
+        const currentSessionCode = sessionCodeRef.current;
+        const currentStudentId = studentIdRef.current;
+
+        if (unsubscribeRef.current) {
+            unsubscribeRef.current();
+            unsubscribeRef.current = null;
+        }
+
+        if (unsubscribeSessionCloseRef.current) {
+            unsubscribeSessionCloseRef.current();
+            unsubscribeSessionCloseRef.current = null;
+        }
+
+        if (currentSessionCode && currentStudentId) {
+            try {
+                await signaling.cleanupOffer(currentSessionCode, currentStudentId);
+            } catch (err) {
+                logger.error('Erro ao limpar oferta do aluno:', err);
+            }
+        }
+
+        if (peerConnectionRef.current) {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
+        }
+        
+        if (remoteStreamRef.current) {
+            remoteStreamRef.current.getTracks().forEach(track => track.stop());
+            remoteStreamRef.current = null;
+        }
+
+        setIsConnected(false);
+        setStatus(STATUS_MESSAGES.WAITING);
+        setSessionCode('');
+        sessionCodeRef.current = '';
+        studentIdRef.current = null;
+        setError(null);
+    }, []);
+
     const connectWithSessionCode = useCallback(async (code) => {
         try {
+            const normalizedCode = normalizeSessionCode(code);
+            if (!validateSessionCode(normalizedCode)) {
+                throw new Error('Código de sessão inválido.');
+            }
+
+            await cleanup();
             setError(null);
             setStatus(STATUS_MESSAGES.CONNECTING);
 
             const studentId = `student-${crypto.randomUUID()}`;
             studentIdRef.current = studentId;
-            sessionCodeRef.current = code;
-            setSessionCode(code);
+            sessionCodeRef.current = normalizedCode;
+            setSessionCode(normalizedCode);
 
-            logger.log(`[Student] Connecting with code: ${code}, Student ID: ${studentId}`);
+            logger.log(`[Student] Connecting with code: ${normalizedCode}, Student ID: ${studentId}`);
 
             const pc = await webRTCService.createPeerConnection();
             peerConnectionRef.current = pc;
@@ -96,7 +143,7 @@ export const useStudentConnection = () => {
             const offerSDP = pc.localDescription.sdp;
 
             logger.log('[Student] Listening for answer from Firebase...');
-            unsubscribeRef.current = signaling.listenForAnswer(code, studentId, async (answerSDP) => {
+            unsubscribeRef.current = signaling.listenForAnswer(normalizedCode, studentId, async (answerSDP) => {
                 logger.log('[Student] Answer received from Teacher!');
                 try {
                     if (pc.signalingState === 'have-local-offer') {
@@ -117,65 +164,27 @@ export const useStudentConnection = () => {
             });
 
             logger.log('[Student] Sending offer to Firebase');
-            await signaling.sendOffer(code, studentId, offerSDP);
+            await signaling.sendOffer(normalizedCode, studentId, offerSDP);
             setStatus(STATUS_MESSAGES.OFFER_SENT);
 
-            unsubscribeSessionCloseRef.current = signaling.listenForSessionClose(code, () => {
-                logger.log('[Student] Session closed by teacher (from Firebase).');
-                setStatus(STATUS_MESSAGES.DISCONNECTED);
-                setError('A transmissão do professor foi encerrada.');
-                setIsConnected(false);
-                if (peerConnectionRef.current) {
-                    peerConnectionRef.current.close();
-                }
-            });
+            if (typeof signaling.listenForSessionClose === 'function') {
+                unsubscribeSessionCloseRef.current = signaling.listenForSessionClose(normalizedCode, () => {
+                    logger.log('[Student] Session closed by teacher (from Firebase).');
+                    setStatus(STATUS_MESSAGES.DISCONNECTED);
+                    setError('A transmissão do professor foi encerrada.');
+                    setIsConnected(false);
+                    if (peerConnectionRef.current) {
+                        peerConnectionRef.current.close();
+                    }
+                });
+            }
 
         } catch (err) {
             logger.error('[Student] Erro fatal ao conectar:', err);
             setError('Erro ao conectar: ' + err.message);
             setStatus(STATUS_MESSAGES.ERROR);
         }
-    }, []);
-
-    const cleanup = useCallback(async () => {
-        const currentSessionCode = sessionCodeRef.current;
-        const currentStudentId = studentIdRef.current;
-
-        if (unsubscribeRef.current) {
-            unsubscribeRef.current();
-            unsubscribeRef.current = null;
-        }
-
-        if (unsubscribeSessionCloseRef.current) {
-            unsubscribeSessionCloseRef.current();
-            unsubscribeSessionCloseRef.current = null;
-        }
-
-        if (currentSessionCode && currentStudentId) {
-            try {
-                await signaling.cleanupOffer(currentSessionCode, currentStudentId);
-            } catch (err) {
-                logger.error('Erro ao limpar oferta do aluno:', err);
-            }
-        }
-
-        if (peerConnectionRef.current) {
-            peerConnectionRef.current.close();
-            peerConnectionRef.current = null;
-        }
-        
-        if (remoteStreamRef.current) {
-            remoteStreamRef.current.getTracks().forEach(track => track.stop());
-            remoteStreamRef.current = null;
-        }
-
-        setIsConnected(false);
-        setStatus(STATUS_MESSAGES.WAITING);
-        setSessionCode('');
-        sessionCodeRef.current = '';
-        studentIdRef.current = null;
-        setError(null);
-    }, []);
+    }, [cleanup]);
 
     useEffect(() => {
         return () => {

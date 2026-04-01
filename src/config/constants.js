@@ -26,6 +26,12 @@ export const WEBRTC_CONFIG = {
     MAX_SDP_PAYLOAD_SIZE: 10000
 };
 
+export const SESSION_CONFIG = {
+    CODE_LENGTH: 6,
+    MAX_GENERATION_ATTEMPTS: 5,
+    STUDENT_ID_MAX_LENGTH: 64
+};
+
 export const VISUALIZER_CONFIG = {
     FFT_SIZE: 256,
     SMOOTHING: 0.7

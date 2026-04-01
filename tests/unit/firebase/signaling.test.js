@@ -11,7 +11,8 @@ vi.mock('firebase/database', () => {
         off: vi.fn(),
         remove: vi.fn(),
         onChildAdded: vi.fn(),
-        onChildRemoved: vi.fn()
+        onChildRemoved: vi.fn(),
+        runTransaction: vi.fn()
     };
 });
 
@@ -33,19 +34,19 @@ describe('FirebaseSignalingService', () => {
 
     describe('createSession', () => {
         test('deve criar sessão com estrutura correta', async () => {
-            const { set, ref } = await import('firebase/database');
+            const { ref, runTransaction } = await import('firebase/database');
 
             ref.mockReturnValue('mock-ref');
-            set.mockResolvedValue(true);
+            runTransaction.mockResolvedValue({ committed: true });
 
             await service.createSession('123456');
 
             expect(ref).toHaveBeenCalledWith(config.database, 'sessions/123456');
-            expect(set).toHaveBeenCalledWith('mock-ref', expect.objectContaining({
-                offers: {},
-                answers: {},
-                createdAt: expect.any(Number)
-            }));
+            expect(runTransaction).toHaveBeenCalledWith(
+                'mock-ref',
+                expect.any(Function),
+                { applyLocally: false }
+            );
         });
 
         test('deve lançar erro se Firebase não configurado', async () => {
@@ -62,10 +63,10 @@ describe('FirebaseSignalingService', () => {
             ref.mockReturnValue('mock-offer-ref');
             set.mockResolvedValue(true);
 
-            await service.sendOffer('123456', 'student-1', 'sdp-offer');
+            await service.sendOffer('123456', 'student-1', 'v=0\r\no=offer');
 
             expect(ref).toHaveBeenCalledWith(config.database, 'sessions/123456/offers/student-1');
-            expect(set).toHaveBeenCalledWith('mock-offer-ref', 'sdp-offer');
+            expect(set).toHaveBeenCalledWith('mock-offer-ref', 'v=0\r\no=offer');
         });
     });
 

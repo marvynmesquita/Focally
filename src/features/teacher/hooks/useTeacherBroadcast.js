@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { firebaseSignalingService as signaling } from '../../../core/signaling/FirebaseSignalingService';
 import { webRTCService } from '../../../core/webrtc/WebRTCService';
 import { generateSessionCode } from '../../../utils/sessionCode';
-import { STATUS_MESSAGES, AUDIO_CONFIG, WEBRTC_CONFIG } from '../../../config/constants';
+import { STATUS_MESSAGES, AUDIO_CONFIG, SESSION_CONFIG, WEBRTC_CONFIG } from '../../../config/constants';
 import { logger } from '../../../utils/logger';
 
 export const useTeacherBroadcast = () => {
@@ -21,11 +21,6 @@ export const useTeacherBroadcast = () => {
             setError(null);
             setStatus(STATUS_MESSAGES.REQUESTING_MIC);
 
-            const code = generateSessionCode();
-            sessionCodeRef.current = code;
-
-            setSessionCode(code);
-
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 throw new Error('Acesso ao microfone não suportado neste navegador. Se você não estiver usando localhost, certifique-se de que o site está rodando em HTTPS.');
             }
@@ -37,8 +32,29 @@ export const useTeacherBroadcast = () => {
             localStreamRef.current = stream;
 
             try {
-                logger.log('[Teacher] Creating Firebase session for code:', code);
-                await signaling.createSession(code);
+                let code = null;
+
+                for (let attempt = 0; attempt < SESSION_CONFIG.MAX_GENERATION_ATTEMPTS; attempt += 1) {
+                    const nextCode = generateSessionCode();
+
+                    try {
+                        logger.log('[Teacher] Creating Firebase session for code:', nextCode);
+                        await signaling.createSession(nextCode);
+                        code = nextCode;
+                        break;
+                    } catch (firebaseError) {
+                        if (!firebaseError.message?.includes('já está em uso')) {
+                            throw firebaseError;
+                        }
+                    }
+                }
+
+                if (!code) {
+                    throw new Error('Não foi possível gerar um código de sessão livre.');
+                }
+
+                sessionCodeRef.current = code;
+                setSessionCode(code);
                 setStatus(STATUS_MESSAGES.WAITING_STUDENTS);
             } catch (firebaseError) {
                 logger.error('[Teacher] Erro ao criar sessão:', firebaseError);
@@ -107,7 +123,7 @@ export const useTeacherBroadcast = () => {
 
                     const answerSDP = pc.localDescription.sdp;
                     logger.log(`[Teacher] Sending answer to Firebase for student: ${studentId}`);
-                    await signaling.sendAnswer(code, studentId, answerSDP);
+                    await signaling.sendAnswer(sessionCodeRef.current, studentId, answerSDP);
 
                     peerConnectionsRef.current.set(studentId, pc);
                     setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
@@ -128,7 +144,7 @@ export const useTeacherBroadcast = () => {
                 setIsConnected(size > 0);
             };
 
-            unsubscribeRef.current = signaling.listenForOffers(code, onNewOffer, onOfferRemoved);
+            unsubscribeRef.current = signaling.listenForOffers(sessionCodeRef.current, onNewOffer, onOfferRemoved);
 
         } catch (err) {
             setError('Erro ao iniciar transmissão: ' + err.message);

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { validateSessionCode } from '../utils/sessionCode';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 import NeonButton from './NeonButton';
 import { logger } from '../utils/logger';
 
@@ -17,58 +16,75 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
 
   useEffect(() => {
     if (showQRScanner) {
+      let html5QrcodeScanner = null;
+      let isActive = true;
       const scannerRegionId = "qr-reader";
-      
-      const html5QrcodeScanner = new Html5QrcodeScanner(
-        scannerRegionId,
-        { 
-          fps: 10,
-          qrbox: { width: 250, height: 250 }
-        },
-        false
-      );
 
-      const onScanSuccess = (decodedText, decodedResult) => {
-        setError('');
-        
-        let sessionCode = decodedText;
+      import('html5-qrcode')
+        .then(({ Html5QrcodeScanner }) => {
+          if (!isActive) {
+            return;
+          }
 
-        if (decodedText.includes('?code=')) {
-          try {
-            const url = new URL(decodedText);
-            const codeFromUrl = url.searchParams.get('code');
-            if (codeFromUrl) {
-              sessionCode = codeFromUrl;
+          html5QrcodeScanner = new Html5QrcodeScanner(
+            scannerRegionId,
+            { 
+              fps: 10,
+              qrbox: { width: 250, height: 250 }
+            },
+            false
+          );
+
+          const onScanSuccess = (decodedText) => {
+            setError('');
+            
+            let sessionCode = decodedText;
+
+            if (decodedText.includes('?code=')) {
+              try {
+                const url = new URL(decodedText);
+                const codeFromUrl = url.searchParams.get('code');
+                if (codeFromUrl) {
+                  sessionCode = codeFromUrl;
+                }
+              } catch (e) {
+                logger.warn('Ignorado: Formato do QRCode não pôde ser parseado via URL Object', e);
+              }
             }
-          } catch (e) {
-            logger.warn('Ignorado: Formato do QRCode não pôde ser parseado via URL Object', e);
-          }
-        }
-        
-        if (validateSessionCode(sessionCode)) {
-          // Tentativa de tela cheia ao interagir
-          if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(err => logger.warn('Fullscreen bloqueada', err));
-          }
+            
+            if (validateSessionCode(sessionCode)) {
+              if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(err => logger.warn('Fullscreen bloqueada', err));
+              }
 
-          onConnect(sessionCode);
-          setCode(sessionCode);
+              onConnect(sessionCode);
+              setCode(sessionCode);
+              setShowQRScanner(false);
+            } else {
+              setError('QR code inválido. Por favor, escaneie o código da sessão.');
+            }
+          };
+
+          const onScanError = (errorMessage) => {
+            logger.warn('Erro ao escanear QRCode:', errorMessage);
+          };
+
+          html5QrcodeScanner.render(onScanSuccess, onScanError);
+        })
+        .catch((error) => {
+          logger.error('Falha ao carregar o leitor de QR Code.', error);
+          setError('Não foi possível carregar a câmera. Tente novamente.');
           setShowQRScanner(false);
-        } else {
-          setError('QR code inválido. Por favor, escaneie o código da sessão.');
-        }
-      };
-
-      const onScanError = (errorMessage) => {
-        logger.warn('Erro ao escanear QRCode:', errorMessage);
-      };
-
-      html5QrcodeScanner.render(onScanSuccess, onScanError);
+        });
 
       return () => {
-        html5QrcodeScanner.clear().catch(err => {
-          logger.error("Falha ao limpar o Html5QrcodeScanner.", err);
-        });
+        isActive = false;
+
+        if (html5QrcodeScanner) {
+          html5QrcodeScanner.clear().catch(err => {
+            logger.error("Falha ao limpar o Html5QrcodeScanner.", err);
+          });
+        }
       };
     }
   }, [showQRScanner, onConnect]);

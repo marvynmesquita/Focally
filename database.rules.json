@@ -4,19 +4,19 @@
         ".write": false,
         "sessions": {
             "$sessionCode": {
-                ".read": true,
-                ".write": true,
+                ".read": "$sessionCode.matches(/^[0-9]{6}$/)",
+                ".write": "$sessionCode.matches(/^[0-9]{6}$/)",
                 "createdAt": {
-                    ".validate": "newData.isNumber()"
+                    ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val())"
                 },
                 "offers": {
                     "$studentId": {
-                        ".validate": "newData.isString()"
+                        ".validate": "$studentId.matches(/^student-[A-Za-z0-9_-]{1,56}$/) && newData.isString() && newData.val().matches(/^v=0\\r?\\n[\\s\\S]{1,9999}$/)"
                     }
                 },
                 "answers": {
                     "$studentId": {
-                        ".validate": "newData.isString()"
+                        ".validate": "$studentId.matches(/^student-[A-Za-z0-9_-]{1,56}$/) && newData.isString() && newData.val().matches(/^v=0\\r?\\n[\\s\\S]{1,9999}$/)"
                     }
                 }
             }

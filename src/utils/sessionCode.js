@@ -1,9 +1,40 @@
+import { SESSION_CONFIG } from '../config/constants';
+
+const SESSION_CODE_REGEX = new RegExp(`^\\d{${SESSION_CONFIG.CODE_LENGTH}}$`);
+
+const getCrypto = () => {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto) {
+    return globalThis.crypto;
+  }
+
+  return null;
+};
+
 /**
  * Gera um código de sessão de 6 dígitos
  * @returns {string} Código de 6 dígitos
  */
 export const generateSessionCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  const cryptoApi = getCrypto();
+
+  if (cryptoApi?.getRandomValues) {
+    const randomBuffer = new Uint32Array(1);
+    cryptoApi.getRandomValues(randomBuffer);
+    const randomValue = randomBuffer[0] % (10 ** SESSION_CONFIG.CODE_LENGTH);
+    return randomValue.toString().padStart(SESSION_CONFIG.CODE_LENGTH, '0');
+  }
+
+  return Math.floor(Math.random() * (10 ** SESSION_CONFIG.CODE_LENGTH))
+    .toString()
+    .padStart(SESSION_CONFIG.CODE_LENGTH, '0');
+};
+
+export const normalizeSessionCode = (code) => {
+  if (typeof code !== 'string') {
+    return '';
+  }
+
+  return code.trim();
 };
 
 /**
@@ -12,6 +43,5 @@ export const generateSessionCode = () => {
  * @returns {boolean} True se válido
  */
 export const validateSessionCode = (code) => {
-  return /^\d{6}$/.test(code);
+  return SESSION_CODE_REGEX.test(normalizeSessionCode(code));
 };
-
