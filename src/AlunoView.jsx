@@ -7,11 +7,11 @@ import GlassCard from './components/GlassCard';
 import VolumeSlider from './components/VolumeSlider';
 import BinauralSelector from './components/BinauralSelector';
 import { useAudioMixer } from './features/student/hooks/useAudioMixer';
-import { FALLBACK_SOUND_OPTIONS } from './config/constants';
+import { DEFAULT_BACKGROUND_SOUND, FALLBACK_SOUND_OPTIONS, SESSION_CONFIG } from './config/constants';
 import { logger } from './utils/logger';
 import { useWakeLock } from './hooks/useWakeLock';
 
-function AlunoView() {
+function AlunoView({ prefilledCode = '' }) {
   const {
     status,
     sessionCode,
@@ -90,7 +90,7 @@ function AlunoView() {
 
   useEffect(() => {
     if (isConnected) {
-      setSelectedSound('beta-wave');
+      setSelectedSound(DEFAULT_BACKGROUND_SOUND);
       requestWakeLock();
     } else {
       setSelectedSound('');
@@ -148,7 +148,7 @@ function AlunoView() {
         {!sessionCode ? (
           <div className="w-full">
             <div className="mb-8 text-center text-gray-300 space-y-2">
-              <p>1. Digite o código de 6 dígitos do seu professor</p>
+              <p>1. Digite o código de {SESSION_CONFIG.CODE_LENGTH} dígitos do seu professor</p>
               <p>2. Clique em "Conectar" para entrar na sessão</p>
               <p>3. O áudio iniciará automaticamente</p>
             </div>
@@ -156,6 +156,7 @@ function AlunoView() {
             <SessionCodeInput
               onConnect={connectWithSessionCode}
               disabled={!isFirebaseConfigured}
+              initialCode={prefilledCode}
             />
           </div>
         ) : (

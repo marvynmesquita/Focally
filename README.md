@@ -50,7 +50,7 @@ PORT=3000
 
 1. Selecione "Sou Professor"
 2. Clique em "Iniciar Transmissão" e permita o acesso ao microfone
-3. Um **código de sessão de 6 dígitos** será gerado automaticamente
+3. Um **código de sessão de 8 dígitos** será gerado automaticamente
 4. Compartilhe o código ou **QR Code** com o aluno
 5. A conexão será estabelecida automaticamente quando o aluno se conectar
 6. O status mudará para "Transmitindo" quando conectado
@@ -58,7 +58,7 @@ PORT=3000
 ### Modo Aluno (Receptor)
 
 1. Selecione "Sou Aluno"
-2. Digite o **código de 6 dígitos** recebido do professor ou escaneie o **QR Code**
+2. Digite o **código de 8 dígitos** recebido do professor ou escaneie o **QR Code**
 3. Clique em "Conectar"
 4. O áudio começará a tocar automaticamente quando a conexão for estabelecida
 
@@ -145,7 +145,7 @@ Para entender em detalhes a arquitetura, componentes e fluxos de dados do aplica
 - ✅ Seleção de modo (Professor/Aluno)
 - ✅ Captura de áudio do microfone
 - ✅ Transmissão de áudio via WebRTC
-- ✅ **Código de sessão de 6 dígitos** para conexão fácil
+- ✅ **Código de sessão de 8 dígitos** para conexão fácil
 - ✅ **QR Code** para compartilhamento rápido
 - ✅ **Sinalização automática** via Firebase Realtime Database
 - ✅ Testes unitários com Vitest
@@ -165,7 +165,7 @@ Para entender em detalhes a arquitetura, componentes e fluxos de dados do aplica
 ## 🛠️ Próximos Passos
 
 - [x] Implementar servidor de sinalização (Firebase Realtime Database)
-- [x] Adicionar código de sessão de 6 dígitos
+- [x] Adicionar código de sessão de 8 dígitos
 - [x] Adicionar QR Code para compartilhamento
 - [ ] Implementar scanner de QR Code via câmera
 - [ ] Adicionar autenticação de usuários
@@ -182,7 +182,8 @@ Para entender em detalhes a arquitetura, componentes e fluxos de dados do aplica
 - A latência típica é de 100-300ms, dependendo da conexão de rede
 - Requer HTTPS em produção (exceto localhost)
 - Funciona melhor em navegadores modernos (Chrome, Firefox, Edge, Safari)
-- O código de sessão é gerado aleatoriamente (6 dígitos numéricos)
+- O código de sessão é gerado aleatoriamente (8 dígitos numéricos)
+
 - As sessões são armazenadas temporariamente no Firebase Realtime Database
 
 ## 🔐 Configuração do Firebase

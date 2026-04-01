@@ -50,7 +50,7 @@ describe('useTeacherBroadcast', () => {
             await result.current.startTransmission();
         });
 
-        expect(result.current.sessionCode.length).toBe(6);
+        expect(result.current.sessionCode.length).toBe(8);
         expect(firebaseSignalingService.createSession).toHaveBeenCalled();
         expect(result.current.status).toBe('Aguardando alunos...');
     });

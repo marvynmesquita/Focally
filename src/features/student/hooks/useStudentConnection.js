@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { firebaseSignalingService as signaling } from '../../../core/signaling/FirebaseSignalingService';
 import { webRTCService } from '../../../core/webrtc/WebRTCService';
-import { STATUS_MESSAGES, WEBRTC_CONFIG } from '../../../config/constants';
+import { STATUS_MESSAGES } from '../../../config/constants';
 import { logger } from '../../../utils/logger';
 import { normalizeSessionCode, validateSessionCode } from '../../../utils/sessionCode';
+import { waitForIceGatheringComplete } from '../../../core/webrtc/waitForIceGatheringComplete';
 
 export const useStudentConnection = () => {
     const [sessionCode, setSessionCode] = useState('');
@@ -121,24 +122,8 @@ export const useStudentConnection = () => {
             await pc.setLocalDescription(offer);
             logger.log('[Student] Local description set');
 
-            if (pc.iceGatheringState !== 'complete') {
-                logger.log('[Student] Waiting for ICE candidates to complete...');
-                await new Promise((resolve) => {
-                    let timeoutId;
-                    const checkState = () => {
-                        if (pc.iceGatheringState === 'complete') {
-                            pc.removeEventListener('icegatheringstatechange', checkState);
-                            clearTimeout(timeoutId);
-                            resolve();
-                        }
-                    };
-                    timeoutId = setTimeout(() => {
-                        pc.removeEventListener('icegatheringstatechange', checkState);
-                        resolve(); // Fallback to avoid infinite wait
-                    }, WEBRTC_CONFIG.ICE_GATHERING_TIMEOUT_MS);
-                    pc.addEventListener('icegatheringstatechange', checkState);
-                });
-            }
+            logger.log('[Student] Waiting for ICE candidates to complete...');
+            await waitForIceGatheringComplete(pc);
 
             const offerSDP = pc.localDescription.sdp;
 

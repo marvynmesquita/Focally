@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { validateSessionCode } from '../utils/sessionCode';
 import NeonButton from './NeonButton';
 import { logger } from '../utils/logger';
+import { SESSION_CONFIG } from '../config/constants';
 
 /**
  * Componente para entrada de código de sessão com opção de escanear QR Code
@@ -13,6 +14,10 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
   const [code, setCode] = useState(initialCode);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setCode(initialCode);
+  }, [initialCode]);
 
   useEffect(() => {
     if (showQRScanner) {
@@ -95,7 +100,7 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
     setError('');
     
     if (!validateSessionCode(code)) {
-      setError('Código inválido. Digite 6 dígitos.');
+      setError(`Código inválido. Digite ${SESSION_CONFIG.CODE_LENGTH} dígitos.`);
       return;
     }
 
@@ -108,7 +113,7 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
   };
 
   const handleCodeChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    const value = e.target.value.replace(/\D/g, '').slice(0, SESSION_CONFIG.CODE_LENGTH);
     setCode(value);
     setError('');
   };
@@ -142,7 +147,7 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
     <div>
       <form onSubmit={handleSubmit} className="mb-6">
         <label className="block mb-2 font-medium text-gray-300">
-          Digite o Código da Sessão (6 dígitos):
+          Digite o Código da Sessão ({SESSION_CONFIG.CODE_LENGTH} dígitos):
         </label>
         <div className="flex flex-col gap-4">
           <input
@@ -150,13 +155,13 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
             value={code}
             onChange={handleCodeChange}
             placeholder="000000"
-            maxLength={6}
+            maxLength={SESSION_CONFIG.CODE_LENGTH}
             disabled={disabled}
             className="w-full p-3 text-2xl text-center tracking-[0.5em] font-mono bg-white/5 border-2 border-white/10 rounded-xl text-white focus:outline-none focus:border-neon-cyan transition-colors placeholder-white/10"
           />
           <NeonButton
             type="submit"
-            disabled={disabled || code.length !== 6}
+            disabled={disabled || code.length !== SESSION_CONFIG.CODE_LENGTH}
             className="w-full"
           >
             Conectar

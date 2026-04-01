@@ -35,4 +35,3 @@ npm start
 ### 4. Alternativa: Usar render.yaml
 
 Se preferir usar o arquivo `render.yaml`, ele já está configurado no projeto. Basta conectar o repositório no Render e ele usará as configurações do arquivo.
-

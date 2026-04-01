@@ -2,7 +2,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 /**
  * Componente para exibir QR Code do código de sessão
- * @param {string} sessionCode - Código de sessão de 6 dígitos
+ * @param {string} sessionCode - Código de sessão numérico
  */
 function QRCodeDisplay({ sessionCode }) {
   if (!sessionCode) return null;

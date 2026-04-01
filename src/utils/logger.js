@@ -5,7 +5,7 @@
  */
 export const logger = {
     log: (...args) => {
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && !import.meta.env.VITEST) {
             console.log(...args);
         }
     },

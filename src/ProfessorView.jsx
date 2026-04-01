@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useTeacherBroadcast } from './features/teacher/hooks/useTeacherBroadcast';
 import QRCodeDisplay from './components/QRCodeDisplay';
 import { isFirebaseConfigured } from './firebase/config';
@@ -6,6 +6,7 @@ import AudioVisualizerBackground from './components/AudioVisualizerBackground';
 import GlassCard from './components/GlassCard';
 import NeonButton from './components/NeonButton';
 import { useWakeLock } from './hooks/useWakeLock';
+import { SESSION_CONFIG } from './config/constants';
 
 function ProfessorView() {
   const {
@@ -35,11 +36,21 @@ function ProfessorView() {
     }
   }, [sessionCode, requestWakeLock, releaseWakeLock]);
 
-  const handleCopyCode = () => {
-    if (sessionCode) {
-      navigator.clipboard.writeText(sessionCode);
-      alert('Código copiado para a área de transferência!');
+  const handleCopyCode = async () => {
+    if (!sessionCode) {
+      return;
     }
+
+    try {
+      await navigator.clipboard.writeText(sessionCode);
+      alert('Código copiado para a área de transferência!');
+    } catch (err) {
+      alert(`Falha ao copiar o código: ${err.message}`);
+    }
+  };
+
+  const handleEndSession = async () => {
+    await cleanup();
   };
 
   return (
@@ -74,7 +85,7 @@ function ProfessorView() {
           <div className="flex flex-col items-center w-full">
             <div className="mb-8 text-center text-gray-300 space-y-2">
               <p>1. Clique em "Iniciar Transmissão" para ativar o microfone</p>
-              <p>2. Compartilhe o código gerado com seu aluno</p>
+              <p>2. Compartilhe o código gerado de {SESSION_CONFIG.CODE_LENGTH} dígitos com seu aluno</p>
               <p>3. A conexão será estabelecida automaticamente</p>
             </div>
 
@@ -117,7 +128,7 @@ function ProfessorView() {
 
             <NeonButton
               variant="danger"
-              onClick={() => window.location.reload()}
+              onClick={handleEndSession}
               className="mt-4"
             >
               Encerrar Sessão

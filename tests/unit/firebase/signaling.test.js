@@ -39,9 +39,9 @@ describe('FirebaseSignalingService', () => {
             ref.mockReturnValue('mock-ref');
             runTransaction.mockResolvedValue({ committed: true });
 
-            await service.createSession('123456');
+            await service.createSession('12345678');
 
-            expect(ref).toHaveBeenCalledWith(config.database, 'sessions/123456');
+            expect(ref).toHaveBeenCalledWith(config.database, 'sessions/12345678');
             expect(runTransaction).toHaveBeenCalledWith(
                 'mock-ref',
                 expect.any(Function),
@@ -51,7 +51,7 @@ describe('FirebaseSignalingService', () => {
 
         test('deve lançar erro se Firebase não configurado', async () => {
             config.isFirebaseConfigured = false;
-            await expect(service.createSession('123456')).rejects.toThrow('Firebase não está configurado');
+            await expect(service.createSession('12345678')).rejects.toThrow('Firebase não está configurado');
             config.isFirebaseConfigured = true; // reset
         });
     });
@@ -63,9 +63,9 @@ describe('FirebaseSignalingService', () => {
             ref.mockReturnValue('mock-offer-ref');
             set.mockResolvedValue(true);
 
-            await service.sendOffer('123456', 'student-1', 'v=0\r\no=offer');
+            await service.sendOffer('12345678', 'student-1', 'v=0\r\no=offer');
 
-            expect(ref).toHaveBeenCalledWith(config.database, 'sessions/123456/offers/student-1');
+            expect(ref).toHaveBeenCalledWith(config.database, 'sessions/12345678/offers/student-1');
             expect(set).toHaveBeenCalledWith('mock-offer-ref', 'v=0\r\no=offer');
         });
     });
@@ -77,7 +77,7 @@ describe('FirebaseSignalingService', () => {
             onChildAdded.mockReturnValue(vi.fn());
             onChildRemoved.mockReturnValue(vi.fn());
 
-            const cleanup = service.listenForOffers('123456', vi.fn(), vi.fn());
+            const cleanup = service.listenForOffers('12345678', vi.fn(), vi.fn());
             expect(typeof cleanup).toBe('function');
 
             cleanup();

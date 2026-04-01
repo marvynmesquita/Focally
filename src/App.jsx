@@ -6,6 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import GlassCard from './components/GlassCard'
 import AudioVisualizerBackground from './components/AudioVisualizerBackground'
 import { logger } from './utils/logger'
+import { validateSessionCode } from './utils/sessionCode'
 
 function App() {
   const [mode, setMode] = useState(null)
@@ -19,7 +20,7 @@ function App() {
 
       if (urlMode === 'aluno') {
         setMode('aluno')
-        if (urlCode && /^\d{6}$/.test(urlCode)) {
+        if (validateSessionCode(urlCode)) {
           setPrefilledCode(urlCode)
         }
         window.history.replaceState(

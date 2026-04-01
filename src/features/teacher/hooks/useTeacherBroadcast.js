@@ -2,8 +2,9 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { firebaseSignalingService as signaling } from '../../../core/signaling/FirebaseSignalingService';
 import { webRTCService } from '../../../core/webrtc/WebRTCService';
 import { generateSessionCode } from '../../../utils/sessionCode';
-import { STATUS_MESSAGES, AUDIO_CONFIG, SESSION_CONFIG, WEBRTC_CONFIG } from '../../../config/constants';
+import { STATUS_MESSAGES, AUDIO_CONFIG, SESSION_CONFIG } from '../../../config/constants';
 import { logger } from '../../../utils/logger';
+import { waitForIceGatheringComplete } from '../../../core/webrtc/waitForIceGatheringComplete';
 
 export const useTeacherBroadcast = () => {
     const [sessionCode, setSessionCode] = useState('');
@@ -102,24 +103,8 @@ export const useTeacherBroadcast = () => {
                     await pc.setLocalDescription(answer);
                     logger.log(`[Teacher] Created and set local answer description for student: ${studentId}`);
 
-                    if (pc.iceGatheringState !== 'complete') {
-                        logger.log(`[Teacher] Waiting for ICE candidates to complete for student: ${studentId}...`);
-                        await new Promise((resolve) => {
-                            let timeoutId;
-                            const checkState = () => {
-                                if (pc.iceGatheringState === 'complete') {
-                                    pc.removeEventListener('icegatheringstatechange', checkState);
-                                    clearTimeout(timeoutId);
-                                    resolve();
-                                }
-                            };
-                            timeoutId = setTimeout(() => {
-                                pc.removeEventListener('icegatheringstatechange', checkState);
-                                resolve(); // Fallback to avoid infinite wait
-                            }, WEBRTC_CONFIG.ICE_GATHERING_TIMEOUT_MS);
-                            pc.addEventListener('icegatheringstatechange', checkState);
-                        });
-                    }
+                    logger.log(`[Teacher] Waiting for ICE candidates to complete for student: ${studentId}...`);
+                    await waitForIceGatheringComplete(pc);
 
                     const answerSDP = pc.localDescription.sdp;
                     logger.log(`[Teacher] Sending answer to Firebase for student: ${studentId}`);
@@ -130,6 +115,8 @@ export const useTeacherBroadcast = () => {
                     setIsConnected(true);
                 } catch (err) {
                     logger.error('[Teacher] Erro ao processar oferta:', err);
+                    setError(`Falha ao processar aluno ${studentId}: ${err.message}`);
+                    setStatus(STATUS_MESSAGES.ERROR);
                 }
             };
 

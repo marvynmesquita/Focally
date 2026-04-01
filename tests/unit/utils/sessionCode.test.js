@@ -1,10 +1,11 @@
 import { describe, test, expect } from 'vitest';
+import { SESSION_CONFIG } from '../../../src/config/constants';
 import { generateSessionCode, normalizeSessionCode, validateSessionCode } from '../../../src/utils/sessionCode';
 
 describe('generateSessionCode', () => {
-    test('deve gerar código de 6 dígitos', () => {
+    test('deve gerar código com tamanho configurado', () => {
         const code = generateSessionCode();
-        expect(code.length).toBe(6);
+        expect(code.length).toBe(SESSION_CONFIG.CODE_LENGTH);
     });
 
     test('deve gerar apenas números', () => {
@@ -23,16 +24,16 @@ describe('generateSessionCode', () => {
 });
 
 describe('validateSessionCode', () => {
-    test('deve aceitar código válido de 6 dígitos', () => {
-        expect(validateSessionCode('123456')).toBe(true);
+    test('deve aceitar código válido com tamanho configurado', () => {
+        expect(validateSessionCode('12345678')).toBe(true);
     });
 
-    test('deve rejeitar código com menos de 6 dígitos', () => {
-        expect(validateSessionCode('12345')).toBe(false);
+    test('deve rejeitar código com menos dígitos que o configurado', () => {
+        expect(validateSessionCode('1234567')).toBe(false);
     });
 
     test('deve rejeitar código com letras', () => {
-        expect(validateSessionCode('12A456')).toBe(false);
+        expect(validateSessionCode('12A45678')).toBe(false);
     });
 
     test('deve rejeitar código null/undefined', () => {
@@ -43,7 +44,7 @@ describe('validateSessionCode', () => {
 
 describe('normalizeSessionCode', () => {
     test('deve remover espaços nas extremidades', () => {
-        expect(normalizeSessionCode(' 123456 ')).toBe('123456');
+        expect(normalizeSessionCode(' 12345678 ')).toBe('12345678');
     });
 
     test('deve retornar string vazia para valores inválidos', () => {

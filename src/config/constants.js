@@ -27,7 +27,7 @@ export const WEBRTC_CONFIG = {
 };
 
 export const SESSION_CONFIG = {
-    CODE_LENGTH: 6,
+    CODE_LENGTH: 8,
     MAX_GENERATION_ATTEMPTS: 5,
     STUDENT_ID_MAX_LENGTH: 64
 };
@@ -44,3 +44,5 @@ export const FALLBACK_SOUND_OPTIONS = [
     { value: 'beta-wave', label: 'Beta (Foco)' },
     { value: 'theta-wave', label: 'Theta (Relaxamento)' },
 ];
+
+export const DEFAULT_BACKGROUND_SOUND = 'beta-wave';

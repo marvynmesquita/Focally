@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react'
+import { logger } from '../utils/logger'
 
 const ProfessorView = React.lazy(() => import('../ProfessorView'))
 const AlunoView = React.lazy(() => import('../AlunoView'))
@@ -16,7 +17,7 @@ const ViewRouter = ({ mode, prefilledCode }) => {
   const ViewComponent = views[mode]
 
   if (!ViewComponent) {
-    console.warn(`View para o modo "${mode}" não encontrada.`)
+    logger.warn(`View para o modo "${mode}" não encontrada.`)
     return <div>Modo inválido selecionado.</div>
   }
 

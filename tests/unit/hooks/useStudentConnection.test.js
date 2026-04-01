@@ -64,10 +64,10 @@ describe('useStudentConnection', () => {
         const { result } = renderHook(() => useStudentConnection());
 
         await act(async () => {
-            await result.current.connectWithSessionCode('123456');
+            await result.current.connectWithSessionCode('12345678');
         });
 
-        expect(result.current.sessionCode).toBe('123456');
+        expect(result.current.sessionCode).toBe('12345678');
         expect(firebaseSignalingService.sendOffer).toHaveBeenCalled();
         expect(result.current.status).toBe('Oferta enviada, aguardando resposta...');
     });
@@ -77,7 +77,7 @@ describe('useStudentConnection', () => {
         const { result } = renderHook(() => useStudentConnection());
 
         await act(async () => {
-            await result.current.connectWithSessionCode('123456');
+            await result.current.connectWithSessionCode('12345678');
         });
 
         await act(async () => {

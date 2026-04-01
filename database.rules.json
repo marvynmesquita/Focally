@@ -4,8 +4,8 @@
         ".write": false,
         "sessions": {
             "$sessionCode": {
-                ".read": "$sessionCode.matches(/^[0-9]{6}$/)",
-                ".write": "$sessionCode.matches(/^[0-9]{6}$/)",
+                ".read": "$sessionCode.matches(/^[0-9]{8}$/)",
+                ".write": "$sessionCode.matches(/^[0-9]{8}$/)",
                 "createdAt": {
                     ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val())"
                 },

@@ -11,8 +11,8 @@ const getCrypto = () => {
 };
 
 /**
- * Gera um código de sessão de 6 dígitos
- * @returns {string} Código de 6 dígitos
+ * Gera um código de sessão numérico
+ * @returns {string} Código com o tamanho definido em SESSION_CONFIG.CODE_LENGTH
  */
 export const generateSessionCode = () => {
   const cryptoApi = getCrypto();
@@ -38,7 +38,7 @@ export const normalizeSessionCode = (code) => {
 };
 
 /**
- * Valida se um código de sessão é válido (6 dígitos)
+ * Valida se um código de sessão é válido
  * @param {string} code - Código a validar
  * @returns {boolean} True se válido
  */
