@@ -10,7 +10,7 @@ import { validateSessionCode } from './utils/sessionCode'
 
 function App() {
   const [mode, setMode] = useState(null)
-  const [prefilledCode, setPrefilledCode] = useState(null)
+  const [prefilledCode, setPrefilledCode] = useState('')
 
   useEffect(() => {
     try {

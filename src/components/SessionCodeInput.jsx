@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { validateSessionCode } from '../utils/sessionCode';
+import { normalizeSessionCode, validateSessionCode } from '../utils/sessionCode';
 import NeonButton from './NeonButton';
 import { logger } from '../utils/logger';
 import { SESSION_CONFIG } from '../config/constants';
@@ -11,13 +11,14 @@ import { SESSION_CONFIG } from '../config/constants';
  * @param {string} initialCode - Código para pré-preencher o input
  */
 function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
-  const [code, setCode] = useState(initialCode);
+  const normalizedInitialCode = normalizeSessionCode(initialCode);
+  const [code, setCode] = useState(normalizedInitialCode);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setCode(initialCode);
-  }, [initialCode]);
+    setCode(normalizedInitialCode);
+  }, [normalizedInitialCode]);
 
   useEffect(() => {
     if (showQRScanner) {

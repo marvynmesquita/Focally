@@ -10,8 +10,10 @@ import { useAudioMixer } from './features/student/hooks/useAudioMixer';
 import { DEFAULT_BACKGROUND_SOUND, FALLBACK_SOUND_OPTIONS, SESSION_CONFIG } from './config/constants';
 import { logger } from './utils/logger';
 import { useWakeLock } from './hooks/useWakeLock';
+import { normalizeSessionCode } from './utils/sessionCode';
 
 function AlunoView({ prefilledCode = '' }) {
+  const safePrefilledCode = normalizeSessionCode(prefilledCode);
   const {
     status,
     sessionCode,
@@ -156,7 +158,7 @@ function AlunoView({ prefilledCode = '' }) {
             <SessionCodeInput
               onConnect={connectWithSessionCode}
               disabled={!isFirebaseConfigured}
-              initialCode={prefilledCode}
+              initialCode={safePrefilledCode}
             />
           </div>
         ) : (
