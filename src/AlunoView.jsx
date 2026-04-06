@@ -165,7 +165,7 @@ function AlunoView({ prefilledCode = '' }) {
           <div className="w-full animate-fade-in">
             <div className="mb-8 text-center">
               <p className="text-gray-400">Conectado à Sessão</p>
-              <p className="text-2xl font-mono font-bold text-neon-cyan tracking-widest">{sessionCode}</p>
+              <p className="text-2xl font-mono font-bold text-accent-primary tracking-widest">{sessionCode}</p>
             </div>
 
             {isConnected && (
@@ -182,7 +182,7 @@ function AlunoView({ prefilledCode = '' }) {
                 <div className="p-4 bg-white/5 rounded-xl border border-white/10">
                   <div className="mb-4">
                     <label className="text-sm font-medium text-gray-300 flex items-center gap-2 mb-4">
-                      <span className="text-neon-cyan">🌊</span> Som de Fundo
+                      <span className="text-accent-primary">🌊</span> Som de Fundo
                     </label>
                     <BinauralSelector
                       selected={selectedSound}

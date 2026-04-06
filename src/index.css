@@ -1,31 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-deepSpace-start: #1a0b2e;
-  --color-deepSpace-end: #0f172a;
-  --color-neon-cyan: #00f2ff;
-  --color-neon-magenta: #ff00ff;
-  --color-surface-glass: rgba(255, 255, 255, 0.1);
-  --color-surface-glassBorder: rgba(255, 255, 255, 0.2);
+  --color-dark-start: #09090b;
+  --color-dark-end: #18181b;
+  --color-accent-primary: #0D9488; /* Teal */
+  --color-accent-secondary: #0F766E;
+  --color-surface-glass: rgba(20, 20, 23, 0.3);
+  --color-surface-glassBorder: rgba(255, 255, 255, 0.08);
 
   --font-sans: 'Inter', 'DM Sans', sans-serif;
 
-  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 8s ease-in-out infinite;
 
   @keyframes float {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-8px); }
   }
 
   @keyframes blob {
     0% { transform: translate(0px, 0px) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
+    33% { transform: translate(25px, -35px) scale(1.05); }
+    66% { transform: translate(-15px, 15px) scale(0.95); }
     100% { transform: translate(0px, 0px) scale(1); }
   }
   
-  --animate-blob: blob 7s infinite;
+  --animate-blob: blob 9s infinite;
   --animate-delay-2000: 2s;
   --animate-delay-4000: 4s;
 }
@@ -37,16 +37,12 @@
   animation-delay: 4s;
 }
 
-:root {
-  /* Legacy variables if needed, but @theme handles the utilities */
-}
-
 body {
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
-  background: linear-gradient(135deg, var(--color-deepSpace-start), var(--color-deepSpace-end));
-  color: white;
+  background: linear-gradient(145deg, var(--color-dark-start), var(--color-dark-end));
+  color: #FAFAFA;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -54,40 +50,40 @@ body {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Glassmorphism Utilities */
 .glass-panel {
-  @apply bg-white/10 backdrop-blur-md border border-white/20 shadow-xl;
+  @apply bg-surface-glass backdrop-blur-xl border border-surface-glassBorder shadow-2xl;
 }
 
 .glass-button {
-  @apply bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300 backdrop-blur-sm;
+  @apply bg-white/5 hover:bg-white/10 border border-white/5 transition-all duration-300 backdrop-blur-md rounded-xl text-sm font-medium tracking-wide;
 }
 
 /* Range Slider Styling */
 input[type=range] {
-  @apply w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer;
+  @apply w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer;
 }
 
 input[type=range]::-webkit-slider-thumb {
-  @apply appearance-none w-4 h-4 rounded-full bg-neon-cyan shadow-[0_0_10px_rgba(0,242,255,0.5)] transition-transform duration-200;
+  @apply appearance-none w-4 h-4 rounded-full bg-accent-primary shadow-[0_0_10px_rgba(13,148,136,0.5)] transition-transform duration-200;
 }
 
 input[type=range]::-webkit-slider-thumb:hover {
-  @apply scale-125;
+  @apply scale-110 bg-accent-secondary;
 }

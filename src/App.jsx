@@ -43,10 +43,10 @@ function App() {
       <div className="w-full max-w-4xl z-10">
         {!mode ? (
           <div className="flex flex-col items-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-4 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+            <h1 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-gray-200">
               Focally
             </h1>
-            <p className="text-gray-400 mb-12 text-lg tracking-wide">O Portal para o Foco Profundo</p>
+            <p className="text-gray-400 mb-12 text-lg font-medium tracking-wide">O portal para o foco profundo</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
               <GlassCard
@@ -54,9 +54,9 @@ function App() {
                 onClick={() => setMode('professor')}
                 className="flex flex-col items-center text-center group"
               >
-                <div className="w-16 h-16 mb-6 rounded-full bg-neon-cyan/10 flex items-center justify-center group-hover:bg-neon-cyan/20 transition-colors duration-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-neon-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                <div className="w-16 h-16 mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-accent-primary/20 group-hover:border-accent-primary/30 transition-all duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-300 group-hover:text-accent-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold mb-2">Professor</h2>
@@ -68,9 +68,9 @@ function App() {
                 onClick={() => setMode('aluno')}
                 className="flex flex-col items-center text-center group"
               >
-                <div className="w-16 h-16 mb-6 rounded-full bg-neon-magenta/10 flex items-center justify-center group-hover:bg-neon-magenta/20 transition-colors duration-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-neon-magenta" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                <div className="w-16 h-16 mb-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all duration-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-300 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold mb-2">Aluno</h2>

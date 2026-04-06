@@ -58,8 +58,8 @@ const AudioVisualizerBackground = ({ active, audioStream }) => {
       
       // Background gradient
       const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, '#1a0b2e');
-      gradient.addColorStop(1, '#0f172a');
+      gradient.addColorStop(0, '#09090b'); // --color-dark-start
+      gradient.addColorStop(1, '#18181b'); // --color-dark-end
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
@@ -89,12 +89,12 @@ const AudioVisualizerBackground = ({ active, audioStream }) => {
       for (let w = 0; w < waveCount; w++) {
         ctx.beginPath();
         
-        // Cores alternadas cyan e magenta
+        // Cores suaves e minimalistas: Teal (#0D9488) e Branco Fosco
         const isCyan = w % 2 === 0;
-        const baseOpacity = active ? (0.3 + audioAmplitude * 0.4) : 0.25;
+        const baseOpacity = active ? (0.15 + audioAmplitude * 0.2) : 0.08;
         ctx.strokeStyle = isCyan 
-          ? `rgba(0, 242, 255, ${baseOpacity - w * 0.04})` 
-          : `rgba(255, 0, 255, ${baseOpacity - w * 0.03})`;
+          ? `rgba(13, 148, 136, ${baseOpacity - w * 0.02})` 
+          : `rgba(255, 255, 255, ${baseOpacity - w * 0.01})`;
         ctx.lineWidth = 3 - w * 0.3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -121,8 +121,8 @@ const AudioVisualizerBackground = ({ active, audioStream }) => {
 
       // Adicionar brilho extra quando há áudio
       if (active && audioAmplitude > 0.2) {
-        ctx.shadowBlur = 15 * audioAmplitude;
-        ctx.shadowColor = audioAmplitude > 0.4 ? 'rgba(0, 242, 255, 0.4)' : 'rgba(255, 0, 255, 0.3)';
+        ctx.shadowBlur = 10 * audioAmplitude;
+        ctx.shadowColor = audioAmplitude > 0.4 ? 'rgba(13, 148, 136, 0.2)' : 'rgba(255, 255, 255, 0.1)';
       } else {
         ctx.shadowBlur = 0;
       }

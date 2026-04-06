@@ -103,7 +103,7 @@ function ProfessorView() {
               <p className="text-gray-400 mb-4">Código da Sessão</p>
               <button
                 onClick={handleCopyCode}
-                className="text-5xl font-mono font-bold text-neon-cyan tracking-widest hover:scale-105 transition-transform cursor-pointer"
+                className="text-5xl font-mono font-bold text-accent-primary tracking-widest hover:scale-105 transition-transform cursor-pointer"
                 title="Clique para copiar"
               >
                 {sessionCode}
@@ -116,10 +116,10 @@ function ProfessorView() {
 
             {isConnected && (
               <div className="mb-8 text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-primary/10 text-accent-primary border border-accent-primary/20">
                   <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-cyan opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-neon-cyan"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-accent-primary"></span>
                   </span>
                   Aluno Conectado e Ouvindo
                 </div>
