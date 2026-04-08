@@ -158,7 +158,7 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
             placeholder="000000"
             maxLength={SESSION_CONFIG.CODE_LENGTH}
             disabled={disabled}
-            className="w-full p-3 text-2xl text-center tracking-[0.5em] font-mono bg-white/5 border-2 border-white/10 rounded-xl text-white focus:outline-none focus:border-neon-cyan transition-colors placeholder-white/10"
+            className="w-full p-3 text-2xl text-center tracking-[0.5em] font-mono bg-[#1f1f1f] border-2 border-[#4d4d4d] rounded-2xl text-white focus:outline-none focus:border-accent-primary focus:shadow-[0_0_0_2px_rgba(83,58,253,0.3)] transition-all placeholder-white/20"
           />
           <NeonButton
             type="submit"
@@ -175,8 +175,8 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
         )}
       </form>
 
-      <div className="mt-6 p-4 bg-neon-cyan/5 rounded-xl border border-neon-cyan/20 text-center">
-        <p className="mb-3 text-neon-cyan font-medium">
+      <div className="mt-6 p-4 bg-accent-primary/10 rounded-2xl border border-accent-primary/20 text-center">
+        <p className="mb-3 text-accent-primary font-medium tracking-tight">
           Alternativa: Escanear QR Code
         </p>
         <NeonButton

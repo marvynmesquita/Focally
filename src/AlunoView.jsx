@@ -126,7 +126,7 @@ function AlunoView({ prefilledCode = '' }) {
           </div>
         )}
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold mb-2 text-white">Modo Aluno</h2>
+          <h2 className="text-3xl font-semibold tracking-tight mb-2 text-white">Modo Aluno</h2>
         </div>
 
         <div className={`

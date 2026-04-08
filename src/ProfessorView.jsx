@@ -59,7 +59,7 @@ function ProfessorView() {
 
       <GlassCard className="flex flex-col items-center">
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold mb-2 text-white">Modo Professor</h2>
+          <h2 className="text-3xl font-semibold tracking-tight mb-2 text-white">Modo Professor</h2>
         </div>
 
         {/* Status Indicator */}
