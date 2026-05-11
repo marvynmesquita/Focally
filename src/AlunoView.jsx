@@ -38,7 +38,9 @@ function AlunoView({ prefilledCode = '' }) {
     isConnected,
     remoteStream,
     soundWaveAudioRef,
-    selectedSound
+    selectedSound,
+    professorVolume,
+    soundWaveVolume
   });
 
   const handleProfessorVolume = useCallback((e) => setProfessorVolume(Number(e.target.value)), []);
@@ -204,6 +206,7 @@ function AlunoView({ prefilledCode = '' }) {
                   ref={professorAudioRef}
                   autoPlay
                   playsInline
+                  muted
                   className="hidden"
                 />
 
