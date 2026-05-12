@@ -175,7 +175,7 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
         )}
       </form>
 
-      <div className="mt-6 p-4 bg-accent-primary/10 rounded-2xl border border-accent-primary/20 text-center">
+      {/* <div className="mt-6 p-4 bg-accent-primary/10 rounded-2xl border border-accent-primary/20 text-center">
         <p className="mb-3 text-accent-primary font-medium tracking-tight">
           Alternativa: Escanear QR Code
         </p>
@@ -187,7 +187,7 @@ function SessionCodeInput({ onConnect, disabled, initialCode = '' }) {
         >
           📷 Escanear QR Code
         </NeonButton>
-      </div>
+      </div> */}
     </div>
   );
 }
