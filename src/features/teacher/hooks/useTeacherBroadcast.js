@@ -130,11 +130,41 @@ export const useTeacherBroadcast = () => {
                     const pc = await webRTCService.createPeerConnection();
                     logger.log(`[Teacher] Created PC for student: ${studentId}`);
 
-                    pc.oniceconnectionstatechange = () => {
+                    pc.oniceconnectionstatechange = async () => {
                         logger.log(`[Teacher] PC [${studentId}] ICE State Change:`, pc.iceConnectionState);
                         if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
                             setStatus(`Transmitindo para ${peerConnectionsRef.current.size} aluno(s)`);
                             setIsConnected(peerConnectionsRef.current.size > 0);
+
+                            try {
+                                const stats = await pc.getStats();
+                                let activePair = null;
+                                
+                                stats.forEach(report => {
+                                    // Localizamos o par de candidatos selecionado pelo ICE
+                                    if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.nominated) {
+                                        activePair = report;
+                                    }
+                                });
+
+                                if (activePair) {
+                                    const remoteCandidate = stats.get(activePair.remoteCandidateId);
+                                    const localCandidate = stats.get(activePair.localCandidateId);
+                                    if (remoteCandidate) {
+                                        logger.log(`[Teacher] Aluno ${studentId} conectou via: ${remoteCandidate.candidateType}`);
+                                        if (remoteCandidate.candidateType === 'relay' || (localCandidate && localCandidate.candidateType === 'relay')) {
+                                            logger.log(`[Teacher] -> Autenticado através do servidor TURN! (Relay)`);
+                                        } else if (remoteCandidate.candidateType === 'srflx') {
+                                            logger.log(`[Teacher] -> Autenticado através do servidor STUN!`);
+                                        } else if (remoteCandidate.candidateType === 'host') {
+                                            logger.log(`[Teacher] -> Conexão direta P2P / Rede Local (Host)`);
+                                        }
+                                    }
+                                }
+                            } catch (err) {
+                                logger.error(`[Teacher] Falha ao obter estatísticas para o aluno ${studentId}:`, err);
+                            }
+
                         } else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
                             pc.close();
                             peerConnectionsRef.current.delete(studentId);
