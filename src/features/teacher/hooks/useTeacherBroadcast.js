@@ -14,6 +14,8 @@ export const useTeacherBroadcast = () => {
 
     const peerConnectionsRef = useRef(new Map()); // <studentId, RTCPeerConnection>
     const localStreamRef = useRef(null);
+    const rawStreamRef = useRef(null);
+    const audioContextRef = useRef(null);
     const unsubscribeRef = useRef(null);
     const sessionCodeRef = useRef(sessionCode);
 
@@ -30,7 +32,37 @@ export const useTeacherBroadcast = () => {
                 audio: AUDIO_CONFIG
             });
 
-            localStreamRef.current = stream;
+            // Store raw stream for cleanup
+            rawStreamRef.current = stream;
+
+            // Audio DSP pipeline to protect against hardware failures ("estouros" and "picos agudos")
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
+            audioContextRef.current = audioCtx;
+
+            const sourceNode = audioCtx.createMediaStreamSource(stream);
+
+            // DynamicsCompressorNode acting as a limiter
+            const compressorNode = audioCtx.createDynamicsCompressor();
+            compressorNode.threshold.value = -15; // Threshold rigoroso
+            compressorNode.knee.value = 5;
+            compressorNode.ratio.value = 20;      // Ratio alto
+            compressorNode.attack.value = 0.002;
+            compressorNode.release.value = 0.2;
+
+            // BiquadFilterNode as a low-pass filter
+            const filterNode = audioCtx.createBiquadFilter();
+            filterNode.type = 'lowpass';
+            filterNode.frequency.value = 8000;    // Leve (corta frequências muito altas)
+
+            const destinationNode = audioCtx.createMediaStreamDestination();
+
+            // Connect nodes: source -> compressor -> filter -> destination
+            sourceNode.connect(compressorNode);
+            compressorNode.connect(filterNode);
+            filterNode.connect(destinationNode);
+
+            localStreamRef.current = destinationNode.stream;
 
             try {
                 let code = null;
@@ -161,6 +193,20 @@ export const useTeacherBroadcast = () => {
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
+        }
+
+        if (rawStreamRef.current) {
+            rawStreamRef.current.getTracks().forEach(track => track.stop());
+            rawStreamRef.current = null;
+        }
+
+        if (audioContextRef.current) {
+            try {
+                await audioContextRef.current.close();
+            } catch (err) {
+                logger.error('Erro ao fechar AudioContext:', err);
+            }
+            audioContextRef.current = null;
         }
 
         setIsConnected(false);
