@@ -35,32 +35,55 @@ export const useTeacherBroadcast = () => {
             // Store raw stream for cleanup
             rawStreamRef.current = stream;
 
-            // Audio DSP pipeline to protect against hardware failures ("estouros" and "picos agudos")
+            // Audio DSP pipeline: Pré-tratamento para conforto vocal e proteção
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             const audioCtx = new AudioContext();
             audioContextRef.current = audioCtx;
 
             const sourceNode = audioCtx.createMediaStreamSource(stream);
 
-            // DynamicsCompressorNode acting as a limiter
-            const compressorNode = audioCtx.createDynamicsCompressor();
-            compressorNode.threshold.value = -15; // Threshold rigoroso
-            compressorNode.knee.value = 5;
-            compressorNode.ratio.value = 20;      // Ratio alto
-            compressorNode.attack.value = 0.002;
-            compressorNode.release.value = 0.2;
+            // 1. High-pass filter: Remove graves indesejados (ruídos de mesa, vento, batidas no microfone)
+            const highpassFilter = audioCtx.createBiquadFilter();
+            highpassFilter.type = 'highpass';
+            highpassFilter.frequency.value = 85;
 
-            // BiquadFilterNode as a low-pass filter
-            const filterNode = audioCtx.createBiquadFilter();
-            filterNode.type = 'lowpass';
-            filterNode.frequency.value = 8000;    // Leve (corta frequências muito altas)
+            // 2. Peaking filter: Aumenta a clareza e presença da voz (médios-agudos)
+            const presenceFilter = audioCtx.createBiquadFilter();
+            presenceFilter.type = 'peaking';
+            presenceFilter.frequency.value = 3000;
+            presenceFilter.Q.value = 1.0;
+            presenceFilter.gain.value = 3.0; // Leve ganho na inteligibilidade
+
+            // 3. Compressor "Musical": Nivela o volume geral da fala de forma suave
+            const levelingCompressor = audioCtx.createDynamicsCompressor();
+            levelingCompressor.threshold.value = -24;
+            levelingCompressor.knee.value = 10;
+            levelingCompressor.ratio.value = 4;
+            levelingCompressor.attack.value = 0.01;
+            levelingCompressor.release.value = 0.1;
+
+            // 4. Limiter: Proteção estrita contra picos/estouros repentinos (hardware fails)
+            const limiterNode = audioCtx.createDynamicsCompressor();
+            limiterNode.threshold.value = -10;
+            limiterNode.knee.value = 0; // Hard knee para limiter
+            limiterNode.ratio.value = 20; // Ratio máximo para limitar
+            limiterNode.attack.value = 0.002;
+            limiterNode.release.value = 0.2;
+
+            // 5. Low-pass filter: Suaviza agudos extremos e chiados (reduz fadiga auditiva)
+            const lowpassFilter = audioCtx.createBiquadFilter();
+            lowpassFilter.type = 'lowpass';
+            lowpassFilter.frequency.value = 10000;
 
             const destinationNode = audioCtx.createMediaStreamDestination();
 
-            // Connect nodes: source -> compressor -> filter -> destination
-            sourceNode.connect(compressorNode);
-            compressorNode.connect(filterNode);
-            filterNode.connect(destinationNode);
+            // Encadeamento: source -> highpass -> presence -> leveling -> limiter -> lowpass -> destination
+            sourceNode.connect(highpassFilter);
+            highpassFilter.connect(presenceFilter);
+            presenceFilter.connect(levelingCompressor);
+            levelingCompressor.connect(limiterNode);
+            limiterNode.connect(lowpassFilter);
+            lowpassFilter.connect(destinationNode);
 
             localStreamRef.current = destinationNode.stream;
 
